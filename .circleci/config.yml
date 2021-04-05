@@ -1,0 +1,49 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/overhide-bitcoin
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - checkout
+      - run:
+          shell: /bin/sh
+          command: |
+            printf "DEBUG=overhide-bitcoin*\n" > .npmrc.dev;
+            printf "WEB3_WSS_URI=fake\n" >> .npmrc.dev;
+            printf "NETWORK_TYPE=rinkeby\n" >> .npmrc.dev;
+            printf "POSTGRES_HOST=postgres\n" >> .npmrc.dev;
+            printf "POSTGRES_PORT=5432\n" >> .npmrc.dev;
+            printf "POSTGRES_DB=oh-btc\n" >> .npmrc.dev;
+            printf "POSTGRES_USER=adam\n" >> .npmrc.dev;
+            printf "POSTGRES_PASSWORD=c0c0nut\n" >> .npmrc.dev;
+            printf "IS_WORKER=false\n" >> .npmrc.dev;
+            cat .npmrc.dev   
+      - run:
+          shell: /bin/sh
+          command: docker-compose -f main/docker/docker-compose.yml -f main/docker/docker-compose.dev.yml --project-directory . --project-name oh up -d 
+      - run:
+          shell: /bin/sh
+          command: docker exec `docker ps -q --filter name="oh-btc"` npm run db-evolve
+      - run:
+          shell: /bin/sh
+          command: docker-compose -f main/docker/docker-compose.yml -f main/docker/docker-compose.dev.yml --project-directory . --project-name oh kill oh-btc
+      - run:
+          shell: /bin/sh
+          command: docker system prune -f
+      - run:
+          shell: /bin/sh
+          command: docker-compose -f main/docker/docker-compose.yml -f main/docker/docker-compose.dev.yml --project-directory . --project-name oh run -v ~/overhide-bitcoin/test-report:/home/node/app/test-report -d oh-btc          
+      - run:
+          shell: /bin/sh
+          command: sleep 10
+      - run:
+          shell: /bin/sh
+          command: docker logs `docker ps -q --filter name="oh-btc"`
+      - run:
+          shell: /bin/sh
+          command: docker exec `docker ps -q --filter name="oh-btc"` npm run test-report
+      - store_test_results:
+          path: ./test-report
+      - store_artifacts:
+          path: ./test-report
