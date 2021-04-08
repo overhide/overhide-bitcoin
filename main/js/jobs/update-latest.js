@@ -15,7 +15,7 @@ const EXPECTED_CONFIRMATIONS = process.env.EXPECTED_CONFIRMATIONS || process.env
 async function go() {
   var timeout = UPDATE_LATEST_JOB_PERIOD_MILLIS;
   try {
-    const latestBlock = (await eth.getLatestBlock()) - EXPECTED_CONFIRMATIONS;
+    const latestBlock = (await btc.getLatestBlock()) - EXPECTED_CONFIRMATIONS;
     const dbMaxBlock = await database.getMaxBlock();
 
     if (dbMaxBlock === -1) {

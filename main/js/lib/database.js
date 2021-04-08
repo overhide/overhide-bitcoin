@@ -102,8 +102,8 @@ class Database {
 
       var stageValues = transactions.map(t => `(
           (SELECT _block_ + 1 FROM CTE),
-          ${t.from ? "decode('" + t.from.slice(2) + "','hex')" : null}, 
-          ${t.to ? "decode('" + t.to.slice(2) + "','hex')" : null}, 
+          '${t.from}', 
+          '${t.to}', 
           '${time}', 
           decode('${bkhash}', 'hex'),
           decode('${txhash}', 'hex'),
@@ -163,8 +163,8 @@ class Database {
 
       var stageValues = transactions.map(t => `(
           ${t.block}, 
-          ${t.from ? "decode('" + t.from.slice(2) + "','hex')" : null}, 
-          ${t.to ? "decode('" + t.to.slice(2) + "','hex')" : null}, 
+          '${t.from}', 
+          '${t.to}', 
           '${time}', 
           decode('${bkhash}', 'hex'),
           decode('${txhash}', 'hex'),
@@ -208,8 +208,8 @@ class Database {
       let result = await this[ctx].db.query(query);
       log('deleting blocks from staging => %o', [...new Set(result.rows.map(row => row.block))]);
 
-      var addresses = new Set([...result.rows.map(r => r.fromaddr.toString('hex')) ,...result.rows.map(r => r.toaddr.toString('hex'))]);
-      addresses = [...addresses].map(a => `decode('${a}','hex')`);
+      var addresses = new Set([...result.rows.map(r => r.fromaddr) ,...result.rows.map(r => r.toaddr)]);
+      addresses = [...addresses].map(a => `'${a}'`);
       addresses = addresses.join(',');
 
       var query = `
@@ -232,8 +232,8 @@ class Database {
    * REMARK:  this method respects the EXPECTED_CONFIRMATIONS config point -- checks max block and does not add transactions higher than that.
    * 
    * @param {[{block: number, from: string, to: string, time: Date, value: string, bkhash:.., txhash:.., parentHash:..},..]} transactions -- list of transactions
-   *   to add; `from` and `to` are "0x" prefixed addresses.
-   * @param {string} address -- '0x' prefixed hex address.
+   *   to add; 
+   * @param {string} address
    */
    async addTransactionsForNewAddress(transactions, address) {
     this[checkInit]();
@@ -248,15 +248,15 @@ class Database {
       
       var txs = transactions.map(t => `(
           ${t.block},
-          ${t.from ? "decode('" + t.from.slice(2) + "','hex')" : null}, 
-          ${t.to ? "decode('" + t.to.slice(2) + "','hex')" : null}, 
+          '${t.from}', 
+          '${t.to}', 
           '${t.time.toISOString()}', 
           decode('${t.txhash.slice(2)}','hex'),
           '${t.value}'
         )`);
       txs = txs.join(',');
 
-      address = `decode('${address.slice(2)}','hex')`;
+      address = `'${address}'`;
 
       var query = 
         `
@@ -286,13 +286,13 @@ class Database {
   /**
    * Check if address is being tracked.
    * 
-   * @param {string} address -- '0x' prefixed hex address.
+   * @param {string} address 
    * @returns {bool} whbtcer address is tracked in database or not
    */
   async checkAddressIsTracked(address) {
     this[checkInit]();
     try {
-      address = `decode('${address.slice(2)}','hex')`;
+      address = `'${address}'`;
       const query = `UPDATE btctrackedaddress SET checked = NOW() WHERE address = ${address};`;
       let result = await this[ctx].db.query(query);
       return result.rowCount > 0;
@@ -314,10 +314,10 @@ class Database {
       const query = `
         SELECT block, fromaddr, toaddr, value, transactionts 
           FROM btctransactions 
-          WHERE fromaddr = decode($1,'hex') AND toaddr = decode($2,'hex')
+          WHERE fromaddr = $1 AND toaddr = $2
           ORDER BY transactionts DESC
       `;
-      const params = [fromAddress.slice(2), toAddress.slice(2)];
+      const params = [fromAddress, toAddress];
       debug('%s <= %o', query, params);
       let result = await this[ctx].db.query(query, params);
       if (result.rowCount == 0) {
@@ -326,8 +326,8 @@ class Database {
       result = result.rows.map(row => {
         return {
           block: row.block,
-          from: row.fromaddr ? `0x${row.fromaddr.toString('hex')}` : null,
-          to: row.toaddr ? `0x${row.toaddr.toString('hex')}` : null,
+          from: row.fromaddr,
+          to: row.toaddr,
           time: row.transactionts,
           value: row.value
         };     
