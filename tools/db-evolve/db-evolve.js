@@ -33,11 +33,12 @@
                                               fromaddr varchar(35) NULL,
                                               toaddr varchar(35) NULL,
                                               blockts timestamptz NOT NULL,
-                                              hash bytea NOT NULL,
+                                              bkhash bytea NOT NULL,
+                                              txhash bytea NOT NULL,
                                               value decimal NOT NULL)`);
      console.log(`created 'btcstaging' table.`);
    }
-   await db.query('CREATE UNIQUE INDEX ON btcstaging (block, fromaddr, toaddr, value);');
+   await db.query('CREATE UNIQUE INDEX ON btcstaging (fromaddr, toaddr, txhash, value);');
    await db.query('CREATE INDEX ON btcstaging (block);');
    await db.query('CREATE INDEX ON btcstaging (fromaddr);');
    await db.query('CREATE INDEX ON btcstaging (toaddr);');
@@ -48,10 +49,11 @@
                                                    fromaddr varchar(35) NULL,
                                                    toaddr varchar(35) NULL,
                                                    transactionts timestamptz NOT NULL,
+                                                   txhash bytea NOT NULL,
                                                    value decimal NOT NULL)`);
      console.log(`created 'btctransactions' table.`);
    }
-   await db.query('CREATE UNIQUE INDEX ON btctransactions (block, fromaddr, toaddr, value);');
+   await db.query('CREATE UNIQUE INDEX ON btctransactions (fromaddr, toaddr, txhash, value);');
    await db.query('CREATE INDEX ON btctransactions (fromaddr);');
    await db.query('CREATE INDEX ON btctransactions (toaddr);');
  

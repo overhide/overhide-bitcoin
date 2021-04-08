@@ -92,7 +92,8 @@ class BtcAddrsChain {
               to: o.addresses[0],
               value: o.value,
               time: new Date(t.received),
-              hash: t.block_hash
+              bkhash: t.block_hash,
+              txhash: t.hash
             };
           }));
         txs = [...txs,...theseTxs];
@@ -106,7 +107,8 @@ class BtcAddrsChain {
           block: r.blockNumber,
           from: r.from,
           to: r.to,
-          hash: r.blockHash,
+          bkhash: r.blockHash,
+          txhash: r.txhash,
           value: r.value,
           time: new Date(+r.timeStamp * 1000)
         };
