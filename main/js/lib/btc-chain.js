@@ -3,7 +3,9 @@
 const crypto = require('crypto')
 const fetch = require('node-fetch');
 const log = require('./log.js').fn("btc-chain");
+const database = require('../lib/database.js');
 const bitcoinMessage = require('bitcoinjs-message')
+var Bitcoin = require('bitcoinjs-lib');
 
 const ENCODING = 'utf-8';
 const HASH_ALGO = 'sha256';
@@ -39,14 +41,13 @@ class BtcChain {
    * Initialize this library: this must be the first method called somewhere from where you're doing context & dependency
    * injection.
    * 
-   * @param {string} btc_network - which network are we using
+   * @param {boolean} isProd - are we in PROD?
    * @return {BtcChain} this
    */
-  init({btc_network} = {}) {
-    if (btc_network == null) throw new Error("NETWORK_TYPE must be specified.");
-
+  init({isProd} = {}) {
     this[ctx] = {
-      btc_network: btc_network
+      isProd: isProd,
+      apiPrefix: isProd ? '' : '/testnet'
     };
     this[metrics] = {
       errors: 0,
@@ -58,29 +59,81 @@ class BtcChain {
   }
 
   /**
-   * @param {number} index -- block index
    * @returns {number} latest block number.
    */
   async getLatestBlock() {
     this[checkInit]();
     try {
-      const url = `https://api.blockcypher.com/v1/btc/${this[ctx].btc_network}`;
+      const url = `https://blockstream.info${this[ctx].apiPrefix}/api/blocks/tip/height`;
       let response = await fetch(url, {
         method: 'GET', headers: {
           'Content-Type': 'text/plain',
-          'Accept': 'application/json'
+          'Accept': 'text/plain'
         }
       });
       if (response.status != 200) {
         let text = await response.text();
         throw `GET ${url} code: ${response.status} error: ${text}`;
       }
-      response = await response.json();      
-      return response.height;  
+      response = await response.text();      
+      return response;  
     } catch (err) {
       this[metrics].errors++;
       throw err;
     }
+  }
+
+  /**
+   * @param {number} block -- block number
+   * @returns {number} hash of the block
+   */
+   async getHashOfBlock(block) {
+    this[checkInit]();
+    try {
+      const url = `https://blockstream.info${this[ctx].apiPrefix}/api/block-height/${block}`;
+      let response = await fetch(url, {
+        method: 'GET', headers: {
+          'Content-Type': 'text/plain',
+          'Accept': 'text/plain'
+        }
+      });
+      if (response.status != 200) {
+        let text = await response.text();
+        throw `GET ${url} code: ${response.status} error: ${text}`;
+      }
+      response = await response.text();      
+      return response;  
+    } catch (err) {
+      this[metrics].errors++;
+      throw err;
+    }
+  }
+
+  /**
+   * @param {*} script -- to extract address out of
+   * @returns {string} the address
+   */
+  getAddressFromScript(script) {
+    for(const type of Object.keys(Bitcoin.payments)) {
+      try {
+        const address = Bitcoin.payments[type]({output: script, network: this[ctx].isProd ? Bitcoin.networks.bitcoin : Bitcoin.networks.testnet}).address
+        if (!address) continue;
+        return address;
+      } catch(e) {}
+    }    
+    return null;
+  }
+
+  async getAddressByTransactionHash(hash, index) {
+    const url = `https://blockstream.info/${this[ctx].apiPrefix}/api/tx/${hash}/raw`;
+    const response = await fetch(url, {method: 'GET'});
+    if (response.status != 200) {
+      let text = await response.text();
+      throw `GET ${url} code: ${response.status} error: ${text}`;
+    }
+    const buffer = await response.buffer();
+    const tx = Bitcoin.Transaction.fromBuffer(buffer);
+    return this.getAddressFromScript(tx.outs[index].script);
   }
 
   /**
@@ -91,44 +144,74 @@ class BtcChain {
   async getTransactionsForBlock(index) {
     this[checkInit]();
     try {
-      const url = `https://api.blockcypher.com/v1/btc/${this[ctx].btc_network}/blocks/671142?txstart=1&limit=1`;
-      let response = await fetch(url, {
-        method: 'GET', headers: {
-          'Content-Type': 'text/plain',
-          'Accept': 'application/json'
-        }
-      });
+      const bkhash = await this.getHashOfBlock(index);
+      const url = `https://blockstream.info/${this[ctx].apiPrefix}/api/block/${bkhash}/raw`;
+      const response = await fetch(url, {method: 'GET'});
       if (response.status != 200) {
         let text = await response.text();
         throw `GET ${url} code: ${response.status} error: ${text}`;
       }
-      response = await response.json();      
-      const block = result.number;
-      const hash = result.hash;
-      const parentHash = result.parentHash;
-      const time = new Date(result.timestamp * 1000);
-      const filtered = (result.transactions || []).filter(t => t.value > 0);
+      const buffer = await response.buffer();
+      const block = Bitcoin.Block.fromHex(buffer.toString('hex'));
+
+      var transactions = block.transactions
+      .map(t => {
+        return {
+          hash: t.getHash().reverse().toString('hex'),
+          from: t.ins,
+          to: t.outs.map(i => {
+            return {address: this.getAddressFromScript(i.script), value: i.value}  
+          })
+        };
+      });
+
+      var relevantAddresses = [...new Set(transactions.flatMap(t => t.to.map(a => a.address)).filter(a => !!a))];
+      relevantAddresses = await database.intersectTracked(relevantAddresses);
+
+      transactions = transactions
+        .filter(t => t.from && t.from.length === 1)
+        .flatMap(t => {
+          let res = t.to.map(m => relevantAddresses.some(r => r == m.address) ? [t.from, m.address, m.value] : [null, m.address, m.value]);
+          return res.map(r => {return {...t, from: r[0], to: r[1], value: r[2]};});
+        })
+        .map(t => {
+          if (!t.from) return t;
+          return new Promise((resolve, reject) => {
+            Promise.all(t.from.map(f => this.getAddressByTransactionHash(f.hash.reverse().toString('hex'), f.index)))
+            .then((fromAddresses) => {
+              resolve({
+                ...t,
+                from: fromAddresses[0]
+              });
+            })
+          });
+        });
+      transactions = await Promise.all(transactions);
+
+      const parentHash = block.prevHash.reverse().toString('hex');
+      const time = new Date(block.timestamp * 1000);
+      const filtered = (transactions || []).filter(t => t.value > 0);
       if (filtered.length == 0) {
         return [{
-          block: block,
+          block: index,
           from: null,
           to: null,
           time: time,
           value: 0,
-          bkhash: hash,
-          txhash: hash,
+          bkhash: bkhash,
+          txhash: bkhash,
           parentHash: parentHash
         }];
       }
       return filtered
         .map(t => {
         return {
-          block: block,
+          block: index,
           from: t.from,
           to: t.to,
           time: time,
           value: t.value,
-          bkhash: hash,
+          bkhash: bkhash,
           txhash: t.hash,
           parentHash: parentHash
         }

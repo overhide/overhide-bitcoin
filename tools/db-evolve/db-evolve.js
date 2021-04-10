@@ -30,15 +30,15 @@
    result = await db.query(`SELECT 1 FROM information_schema.tables WHERE table_name = 'btcstaging'`);
    if (result.rowCount == 0) {
      await db.query(`CREATE TABLE btcstaging (block integer NOT NULL,
-                                              fromaddr varchar(35) NULL,
-                                              toaddr varchar(35) NULL,
+                                              fromaddr text NULL,
+                                              toaddr text NULL,
                                               blockts timestamptz NOT NULL,
                                               bkhash bytea NOT NULL,
                                               txhash bytea NOT NULL,
                                               value decimal NOT NULL)`);
      console.log(`created 'btcstaging' table.`);
    }
-   await db.query('CREATE UNIQUE INDEX ON btcstaging (fromaddr, toaddr, txhash, value);');
+   await db.query('CREATE UNIQUE INDEX ON btcstaging (block, txhash, toaddr);');
    await db.query('CREATE INDEX ON btcstaging (block);');
    await db.query('CREATE INDEX ON btcstaging (fromaddr);');
    await db.query('CREATE INDEX ON btcstaging (toaddr);');
@@ -46,20 +46,20 @@
    result = await db.query(`SELECT 1 FROM information_schema.tables WHERE table_name = 'btctransactions'`);
    if (result.rowCount == 0) {
      await db.query(`CREATE TABLE btctransactions (block integer NOT NULL,
-                                                   fromaddr varchar(35) NULL,
-                                                   toaddr varchar(35) NULL,
+                                                   fromaddr text NULL,
+                                                   toaddr text NULL,
                                                    transactionts timestamptz NOT NULL,
                                                    txhash bytea NOT NULL,
                                                    value decimal NOT NULL)`);
      console.log(`created 'btctransactions' table.`);
    }
-   await db.query('CREATE UNIQUE INDEX ON btctransactions (fromaddr, toaddr, txhash, value);');
+   await db.query('CREATE UNIQUE INDEX ON btctransactions (block, txhash, toaddr);');
    await db.query('CREATE INDEX ON btctransactions (fromaddr);');
    await db.query('CREATE INDEX ON btctransactions (toaddr);');
  
    result = await db.query(`SELECT 1 FROM information_schema.tables WHERE table_name = 'btctrackedaddress'`);
    if (result.rowCount == 0) {
-     await db.query(`CREATE TABLE btctrackedaddress (address varchar(35) NULL,
+     await db.query(`CREATE TABLE btctrackedaddress (address text NULL,
                                                      checked timestamptz NOT NULL)`);
      console.log(`created 'btctrackedaddress' table.`);
    }

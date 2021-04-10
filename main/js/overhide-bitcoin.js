@@ -43,8 +43,7 @@ const ctx_config = {
   debug: DEBUG,
   salt: SALT,
   tokenUrl: TOKEN_URL,
-  isTest: !ISPROD,
-  btc_network: NETWORK_TYPE,
+  isProd: !!ISPROD && /true/i.test(ISPROD),
   rateLimitWindowsMs: RATE_LIMIT_WINDOW_MS,
   rateLimitMax: RATE_LIMIT_MAX_REQUESTS_PER_WINDOW,
   confirmations: EXPECTED_CONFIRMATIONS,
@@ -106,6 +105,7 @@ function onSignal() {
 }
 
 async function onHealthCheck() {
+  require('./jobs/update-latest')();
   const btcMetrics = btc.metrics();
   const btcAddrMetrics = btcaddr.metrics();
   var healthy = btcMetrics.errorsDelta === 0 && btcAddrMetrics === 0;

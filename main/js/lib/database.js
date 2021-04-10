@@ -84,7 +84,7 @@ class Database {
   /**
    * Add new transactions -- with chain continuity check: only next new block is allowed to be added.
    * 
-   * @param {[{block: number, from: string, to: string, time: Date, value: string, bkhash:.., txhash:.., parentHash:..},..]} transactions -- list of transactions to add; `from` and `to` are "0x" prefixed addresses.  All transactions must be for the same block.
+   * @param {[{block: number, from: string, to: string, time: Date, value: string, bkhash:.., txhash:.., parentHash:..},..]} transactions -- list of transactions to add;  All transactions must be for the same block.
    */
   async addBlockTransactions(transactions) {
     this[checkInit]();
@@ -96,9 +96,8 @@ class Database {
       
       const block = transactions[0].block;
       const time = transactions[0].time.toISOString();
-      const bkhash = transactions[0].bkhash.slice(2);
-      const txhash = transactions[0].txhash.slice(2);
-      const parentHash = transactions[0].parentHash.slice(2);
+      const bkhash = transactions[0].bkhash;
+      const parentHash = transactions[0].parentHash;
 
       var stageValues = transactions.map(t => `(
           (SELECT _block_ + 1 FROM CTE),
@@ -106,7 +105,7 @@ class Database {
           '${t.to}', 
           '${time}', 
           decode('${bkhash}', 'hex'),
-          decode('${txhash}', 'hex'),
+          decode('${t.txhash}', 'hex'),
           '${t.value}'
         )`);
       stageValues = stageValues.join(',');
@@ -124,14 +123,14 @@ class Database {
               AND bkhash=decode('${parentHash}', 'hex'))
             INSERT INTO btcstaging (block, fromaddr, toaddr, blockts, bkhash, txhash, value) 
               VALUES ${stageValues} 
-              ON CONFLICT (fromaddr, toaddr, txhash, value) DO NOTHING;
+              ON CONFLICT (block, txhash, toaddr) DO NOTHING;
 
             INSERT INTO btctransactions (block, fromaddr, toaddr, transactionts, txhash, value)
               (
                 SELECT block, fromaddr, toaddr, blockts, txhash, value FROM btcstaging S
                   JOIN btctrackedaddress A ON S.fromaddr = A.address OR S.toaddr = A.address
               )
-              ON CONFLICT (fromaddr, toaddr, txhash, value) DO NOTHING;
+              ON CONFLICT (block, txhash, toaddr) DO NOTHING;
 
             DELETE FROM btcstaging WHERE block < ${block} - 100;
 
@@ -146,7 +145,7 @@ class Database {
   /**
    * Add transactions -- no chain continuity check -- assumption is these are valid.  Use this to seed when there are no previous transactions to check against
    * 
-   * @param {[{block: number, from: string, to: string, time: Date, value: string, bkhash:.., txhash:.., parentHash:..},..]} transactions -- list of transactions to add; `from` and `to` are "0x" prefixed addresses.  All transactions must be for the same block.
+   * @param {[{block: number, from: string, to: string, time: Date, value: string, bkhash:.., txhash:.., parentHash:..},..]} transactions -- list of transactions to add;  All transactions must be for the same block.
    */
    async addBlockTransactionsNoCheck(transactions) {
     this[checkInit]();
@@ -158,8 +157,7 @@ class Database {
       
       const block = transactions[0].block;
       const time = transactions[0].time.toISOString();
-      const bkhash = transactions[0].bkhash.slice(2);
-      const txhash = transactions[0].txhash.slice(2);
+      const bkhash = transactions[0].bkhash;
 
       var stageValues = transactions.map(t => `(
           ${t.block}, 
@@ -167,7 +165,7 @@ class Database {
           '${t.to}', 
           '${time}', 
           decode('${bkhash}', 'hex'),
-          decode('${txhash}', 'hex'),
+          decode('${t.txhash}', 'hex'),
           '${t.value}'
         )`);
       stageValues = stageValues.join(',');
@@ -178,14 +176,14 @@ class Database {
 
             INSERT INTO btcstaging (block, fromaddr, toaddr, blockts, bkhash, txhash, value) 
               VALUES ${stageValues} 
-              ON CONFLICT (fromaddr, toaddr, txhash, value) DO NOTHING;
+              ON CONFLICT (block, txhash, toaddr) DO NOTHING;
           
             INSERT INTO btctransactions (block, fromaddr, toaddr, transactionts, txhash, value)
               (
                 SELECT block, fromaddr, toaddr, blockts, txhash, value FROM btcstaging S
                   JOIN btctrackedaddress A ON S.fromaddr = A.address OR S.toaddr = A.address
               )
-              ON CONFLICT (fromaddr, toaddr, txhash, value) DO NOTHING;
+              ON CONFLICT (block, txhash, toaddr) DO NOTHING;
               
           COMMIT;
         `;
@@ -251,7 +249,7 @@ class Database {
           '${t.from}', 
           '${t.to}', 
           '${t.time.toISOString()}', 
-          decode('${t.txhash.slice(2)}','hex'),
+          decode('${t.txhash}','hex'),
           '${t.value}'
         )`);
       txs = txs.join(',');
@@ -263,14 +261,14 @@ class Database {
           BEGIN;
 
             INSERT INTO btctransactions (block, fromaddr, toaddr, transactionts, txhash, value) VALUES ${txs} 
-              ON CONFLICT (fromaddr, toaddr, txhash, value) DO NOTHING;
+              ON CONFLICT (block, txhash, toaddr) DO UPDATE;
 
             INSERT INTO btctransactions (block, fromaddr, toaddr, transactionts, txhash, value) 
              (
                 SELECT block, fromaddr, toaddr, blockts, txhash, value FROM btcstaging S
                   WHERE S.fromaddr = ${address} OR S.toaddr = ${address}
              )
-             ON CONFLICT (fromaddr, toaddr, txhash, value) DO NOTHING;
+             ON CONFLICT (block, txhash, toaddr) DO NOTHING;
           
             INSERT INTO btctrackedaddress (address, checked) VALUES (${address}, NOW())
               ON CONFLICT (address) DO NOTHING;
@@ -284,7 +282,7 @@ class Database {
   }
 
   /**
-   * Check if address is being tracked.
+   * Check if address is being tracked and has full info.
    * 
    * @param {string} address 
    * @returns {bool} whbtcer address is tracked in database or not
@@ -293,7 +291,9 @@ class Database {
     this[checkInit]();
     try {
       address = `'${address}'`;
-      const query = `UPDATE btctrackedaddress SET checked = NOW() WHERE address = ${address};`;
+      const query = `UPDATE btctrackedaddress SET checked = NOW() WHERE address = '${address}'
+                     AND NOT EXISTS (SELECT 1 FROM btctransactions WHERE fromaddr = '${address}' AND toaddr IS NULL)
+                     AND NOT EXISTS (SELECT 1 FROM btctransactions WHERE toaddr = '${address}' AND fromaddr IS NULL);`;
       let result = await this[ctx].db.query(query);
       return result.rowCount > 0;
     } catch (err) {
@@ -302,10 +302,32 @@ class Database {
   }
 
   /**
+   * @param {string[]} addresses -- addresses to get transactions for.
+   * @returns {string[]} susbet of passed in addresses that are tracked.
+   */
+   async intersectTracked(addresses) {
+    this[checkInit]();
+    try {
+      if (!addresses || addresses.length === 0) return [];
+      addresses = addresses.map(address => `'${address}'`).join(',');
+      const query = `SELECT address FROM btctrackedaddress WHERE address IN (${addresses})`;
+      let result = await this[ctx].db.query(query);
+      if (result.rowCount == 0) {
+        return [];
+      }
+      result = result.rows.map(row => row.address);
+      return result;
+    } catch (err) {
+      throw `intersectTracked error :: ${String(err)}`;
+    }
+  }
+
+
+  /**
    * Get transactions for address
    * 
-   * @param {string} fromAddress -- '0x' prefixed address to get transactions for.
-   * @param {string} toAddress -- '0x' prefixed recepient address to get transactions for.
+   * @param {string} fromAddress -- address to get transactions for.
+   * @param {string} toAddress -- address to get transactions for.
    * @returns {[{block: number, from: string, to: string, time: Date, value: string},..]} transactions
    */
   async getTransactionsFromTo(fromAddress, toAddress) {

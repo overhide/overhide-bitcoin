@@ -33,20 +33,20 @@ class BtcAddrsChain {
    * Initialize this library: this must be the first method called somewhere from where you're doing context & dependency
    * injection.
    * 
-   * @param {string} btc_network - which network are we using
+   * @param {boolean} isProd - are we in PROD
    * @return {BtcAddrsChain} this
    */
-   init({btc_network} = {}) {
-    if (btc_network == null) throw new Error("NETWORK_TYPE must be specified.");
+   init({isProd} = {}) {
 
     this[ctx] = {
-      btc_network: btc_network
+      isProd: isProd
     };
     this[metrics] = {
       errors: 0,
       errorsLastCheck: 0,
       errorsDelta: 0,
-      txlistForAddressHits: 0
+      txlistForAddressHits: 0,
+      isProd: isProd
     };
 
     return this;
