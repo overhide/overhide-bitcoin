@@ -10,8 +10,6 @@ jobs:
           shell: /bin/sh
           command: |
             printf "DEBUG=overhide-bitcoin*\n" > .npmrc.dev;
-            printf "WEB3_WSS_URI=fake\n" >> .npmrc.dev;
-            printf "NETWORK_TYPE=rinkeby\n" >> .npmrc.dev;
             printf "POSTGRES_HOST=postgres\n" >> .npmrc.dev;
             printf "POSTGRES_PORT=5432\n" >> .npmrc.dev;
             printf "POSTGRES_DB=oh-btc\n" >> .npmrc.dev;
