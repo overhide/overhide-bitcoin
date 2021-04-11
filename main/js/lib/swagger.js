@@ -35,17 +35,17 @@ class Swagger {
    * 
    * @param {string} base_url - URL at which Swagger docs are being served
    * @param {string} swagger_endpoints_path - path to file with annotated endpoints for more API definitions
-   * @param {string} ethereum_network - connected to
+   * @param {string} isProd - true if connected to mainnet
    * @returns {Swagger} this
    */
-  init({ base_url, swagger_endpoints_path, ethereum_network } = {}) {
+  init({ base_url, swagger_endpoints_path, isProd } = {}) {
     if (base_url == null) throw new Error("BASE_URL must be specified.");
     if (swagger_endpoints_path == null) throw new Error("Swagger endpoints_path must be specified.");
 
     this[ctx] = {
       url: base_url,
       path: swagger_endpoints_path,
-      network: ethereum_network || "mainnet"
+      network: isProd ? "mainnet" | "testnet"
     };
     return this;
   }
@@ -71,16 +71,16 @@ class Swagger {
         basePath: /
         info:
           description: |          
-            An *overhide* "remuneration provider" API for Ethereum networks.
+            An *overhide* "remuneration provider" API for Bitcoin networks.
 
-            These API docs are live: connected to the \`${this[ctx].network}\` Ethereum network.
+            These API docs are live: connected to the \`${this[ctx].network}\` Bitcoin network.
 
             > These APIs are available on two networks:
             >
-            > * [mainnet](https://ethereum.overhide.io/swagger.html)
-            > * [rinkeby](https://rinkeby.ethereum.overhide.io/swagger.html)
+            > * [mainnet](https://bitcoin.overhide.io/swagger.html)
+            > * [testnet](https://test.bitcoin.overhide.io/swagger.html)
 
-            GitHub repository for this *overhide-ethereum* service: [https://github.com/overhide/overhide-ethereum](https://github.com/overhide/overhide-ethereum).
+            GitHub repository for this *overhide-bitcoin* service: [https://github.com/overhide/overhide-bitcoin](https://github.com/overhide/overhide-bitcoin).
 
             Motivation for this API is written up at [https://overhide.io/2019/03/20/why.html](https://overhide.io/2019/03/20/why.html).
 
@@ -89,20 +89,20 @@ class Swagger {
             These APIs require bearer tokens to be furnished in an 'Authorization' header as 'Bearer ..' values.  The tokens are to be retrieved from
             [https://token.overhide.io](https://token.overhide.io).
           version: 1.0.0
-          title: overhide-ethereum API
+          title: overhide-bitcoin API
           contact:
             name: r/overhide (reddit)
             url: https://www.reddit.com/r/overhide/
           externalDocs:
-            description: GitHub repository for overhide-ethereum.
-            url: 'https://github.com/overhide/overhide-ethereum'
+            description: GitHub repository for overhide-bitcoin.
+            url: 'https://github.com/overhide/overhide-bitcoin'
           license:
             name: License
-            url: 'https://github.com/overhide/overhide-ethereum/blob/master/LICENSE'
+            url: 'https://github.com/overhide/overhide-bitcoin/blob/master/LICENSE'
         tags:
           - name: remuneration provider
             description: |
-              Implementation of the *overhide* "remuneration provider" APIs for Ethereum networks.
+              Implementation of the *overhide* "remuneration provider" APIs for Bitcoin networks.
         definitions:
           Transaction:
             type: object

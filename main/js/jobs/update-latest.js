@@ -44,6 +44,7 @@ async function go() {
     log(`error: ${err}`);
   }
 
+  // TODO
   //setTimeout(go, timeout);
 }
 

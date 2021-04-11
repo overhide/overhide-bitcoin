@@ -11,10 +11,9 @@ async function is_signature_valid({signature, message, address}) {
 
   // check address valid on blockchain
   address = address.toLowerCase();
-  if (! address.startsWith('0x')) throw new Error('address must start with 0x');
 
   if (!await database.checkAddressIsTracked(address)) {
-    const txs = await btcerscan.getTransactionsForAddress(address);
+    const txs = await btc.getTransactionsForAddress(address);
     if (!txs || txs.length == 0) {
       throw `no transactions for address ${address} on chain.`;
     }

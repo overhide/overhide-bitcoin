@@ -27,6 +27,11 @@ router.get('/swagger.json', (req, res, next) => {
  *      summary: Retrieve remuneration transactions and/or their tally.
  *      description: |
  *        Retrieve the latest remuneration transactions (and/or their tally) from *from-address* to *to-address*
+ * 
+ *       Only P2PKH, P2SH, Bech32 entries with a single input and one or two outputs are considered valid for the purposes
+ *       of [ledger-based authorizations](https://overhide.io/2019/03/20/why.html).
+ * 
+ *       All values in *satoshis*.
  *      tags:
  *        - remuneration provider
  *      parameters:
@@ -34,15 +39,24 @@ router.get('/swagger.json', (req, res, next) => {
  *          name: from-address
  *          required: true
  *          description: |
- *            A public address from which to verify payment details (amount/date) to the *to-address*.  A 42 character 
- *            'hex' string prefixed with '0x'.
+ *            A public address from which to verify payment details (amount/date) to the *to-address*.  
+ * 
+ *            Either:
+ *             1. P2PKH which begin with the number 1, eg: 1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2.
+ *             1. P2SH type starting with the number 3, eg: 3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy.
+ *             1. Bech32 type starting with bc1, eg: bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq.
  *          schema:
  *            type: string
  *        - in: path
  *          name: to-address
  *          required: true
  *          description: |
- *            The target public address to check for payment made.  A 42 character 'hex' string prefixed with '0x'.
+ *            The target public address to check for payment made.
+ * 
+ *            Either:
+ *             1. P2PKH which begin with the number 1, eg: 1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2.
+ *             1. P2SH type starting with the number 3, eg: 3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy.
+ *             1. Bech32 type starting with bc1, eg: bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq.
  *          schema:
  *            type: string
  *        - in: query
@@ -161,6 +175,9 @@ router.get('/get-transactions/:fromAddress/:toAddress', token, (req, rsp) => {
  *       Check if provided signature corresponds to the provided address, resolved to the provided message.
  *
  *       Check if provided address is a valid address with at least one entry on the ledger.
+ * 
+ *       Only P2PKH, P2SH, Bech32 entries with a single input and one or two outputs are considered valid for the purposes
+ *       of [ledger-based authorizations](https://overhide.io/2019/03/20/why.html).  
  *     tags:
  *       - remuneration provider
  *     requestBody:
@@ -185,7 +202,12 @@ router.get('/get-transactions/:fromAddress/:toAddress', token, (req, rsp) => {
  *                address:
  *                  type: string
  *                  description: |
- *                    the address (public key) of signature: a 42 character 'hex' string prefixed with '0x'
+ *                    the address of signature.
+ * 
+ *                    Either:
+ *                      1. P2PKH which begin with the number 1, eg: 1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2.
+ *                      1. P2SH type starting with the number 3, eg: 3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy.
+ *                      1. Bech32 type starting with bc1, eg: bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq.
  *     consumes:
  *       - application/json
  *     produces:

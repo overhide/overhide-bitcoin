@@ -60,7 +60,6 @@ const log = require('./lib/log.js').init(ctx_config).fn("app");
 const debug = require('./lib/log.js').init(ctx_config).debug_fn("app");
 const crypto = require('./lib/crypto.js').init(ctx_config);
 const btc = require('./lib/btc-chain.js').init(ctx_config);
-const btcaddr = require('./lib/btc-addrs-chain.js').init(ctx_config);
 const database = require('./lib/database.js').init(ctx_config);
 const swagger = require('./lib/swagger.js').init(ctx_config);
 const token = require('./lib/token.js').init(ctx_config);
@@ -72,6 +71,7 @@ log("CONFIG:\n%O", ((cfg) => {
 
 // WORKER JOBS
 if (IS_WORKER) {
+  // TODO
   //require('./jobs/update-latest')();
 }
 
@@ -107,10 +107,9 @@ function onSignal() {
 async function onHealthCheck() {
   require('./jobs/update-latest')();
   const btcMetrics = btc.metrics();
-  const btcAddrMetrics = btcaddr.metrics();
-  var healthy = btcMetrics.errorsDelta === 0 && btcAddrMetrics === 0;
+  var healthy = btcMetrics.errorsDelta === 0;
   if (!healthy) {
-    let reason = `onHealthCheck failed (btc.errorsDelta: ${btcMetrics.errorsDelta}, btcaddr.errorsDelta:${btcAddrMetrics.errorsDelta})`;
+    let reason = `onHealthCheck failed (btc.errorsDelta: ${btcMetrics.errorsDelta})`;
     log(reason);
     throw new HealthCheckError('healtcheck failed', [reason])
   }
@@ -118,8 +117,7 @@ async function onHealthCheck() {
     version: VERSION,
     healthy: healthy ? true : false,
     metrics: {
-      btc: btcMetrics,
-      btcaddr: btcAddrMetrics
+      btc: btcMetrics
     }
   };  
   return status;
