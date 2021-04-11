@@ -1,12 +1,12 @@
 # BUILDING
 #
-#   docker build -t oh-eth -f main/docker/Dockerfile .
+#   docker build -t oh-btc -f main/docker/Dockerfile .
 #
 #   -> build from root of this source (cd ../.. from here)  
 #
 # RUNNING
 #
-#   docker run --rm --name oh-eth -p 8080:8080 oh-eth 
+#   docker run --rm --name oh-btc -p 8080:8080 oh-btc
 #
 #   -> map to 0.0.0.0:8080 so localhost 8080 works for running tests against container
 #   -> if running in VirtualBox (docker-machine) ensure to port forward port 8080 in the docker-machine VM ('default')

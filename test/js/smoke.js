@@ -2,7 +2,7 @@ const btc_acct1 = 'tb1q2ye03p4jdcja4vn9ap4tfq0qcc6esw3zwthcau';
 
 const btc_acct2 = 'tb1qr9d7z0es86sps5f2kefx5grpj4a5yvp4evj80z';
 
-const POINT_0_1_BTC_IN_SATOSHIS = 100000000;
+const POINT_0_1_BTC_IN_SATOSHIS = 1000000;
 
 const HOST = process.env.HOST || process.env.npm_config_HOST || process.env.npm_package_config_HOST || 'localhost';
 const PORT = process.env.PORT || process.env.npm_config_PORT || process.env.npm_package_config_PORT || 8080;
@@ -11,15 +11,16 @@ const API_KEY = '0x___API_KEY_ONLY_FOR_DEMOS_AND_TESTS___';
 const ISPROD = process.env.ISPROD || process.env.npm_config_ISPROD || process.env.npm_package_config_ISPROD || false;
 const POSTGRES_HOST = process.env.POSTGRES_HOST || process.env.npm_config_POSTGRES_HOST || process.env.npm_package_config_POSTGRES_HOST || 'postgres'
 const POSTGRES_PORT = process.env.POSTGRES_PORT || process.env.npm_config_POSTGRES_PORT || process.env.npm_package_config_POSTGRES_PORT || 5432
-const POSTGRES_DB = process.env.POSTGRES_DB || process.env.npm_config_POSTGRES_DB || process.env.npm_package_config_POSTGRES_DB || 'oh-eth';
+const POSTGRES_DB = process.env.POSTGRES_DB || process.env.npm_config_POSTGRES_DB || process.env.npm_package_config_POSTGRES_DB || 'oh-btc';
 const POSTGRES_USER = process.env.POSTGRES_USER || process.env.npm_config_POSTGRES_USER || process.env.npm_package_config_POSTGRES_USER || 'adam';
 const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD || process.env.npm_config_POSTGRES_PASSWORD || process.env.npm_package_config_POSTGRES_PASSWORD || 'c0c0nut';
 const POSTGRES_SSL = process.env.POSTGRES_SSL || process.env.npm_config_POSTGRES_SSL || process.env.npm_package_config_POSTGRES_SSL;
-const EXPECTED_CONFIRMATIONS = process.env.EXPECTED_CONFIRMATIONS || process.env.npm_config_EXPECTED_CONFIRMATIONS || process.env.npm_package_config_EXPECTED_CONFIRMATIONS || 7;
+const EXPECTED_CONFIRMATIONS = process.env.EXPECTED_CONFIRMATIONS || process.env.npm_config_EXPECTED_CONFIRMATIONS || process.env.npm_package_config_EXPECTED_CONFIRMATIONS || 2;
 
 
 const chai = require('chai');
 const chaiHttp = require('chai-http');
+const { stringify } = require('querystring');
 require('../../main/js/lib/log.js').init({app_name:'smoke'});
 const crypto = require('../../main/js/lib/crypto.js').init();
 const btc = require('../../main/js/lib/btc-chain.js').init({isProd: ISPROD});
@@ -40,6 +41,10 @@ var TOKEN;
 chai.use(chaiHttp);
 
 async function instrumentDb() {
+  console.log(`instrumenting DB`);
+  await database.addBlockTransactionsNoCheck([{block: 403, from: '00', to: '00', value: '1000000', time: new Date('2020-05-07T14:57:36Z'), bkhash:'00', txhash: '10', parentHash:'00'}]);
+  await database.addBlockTransactionsNoCheck([{block: 402, from: '00', to: '00', value: '1000000', time: new Date('2020-05-07T14:47:36Z'), bkhash:'00', txhash: '10', parentHash:'00'}]);
+  await database.addBlockTransactionsNoCheck([{block: 401, from: '00', to: '00', value: '1000000', time: new Date('2020-05-07T14:37:36Z'), bkhash:'00', txhash: '10', parentHash:'00'}]);
   await database.addBlockTransactionsNoCheck([{block: 400, from: '00', to: '00', value: '1000000', time: new Date('2020-05-07T14:27:36Z'), bkhash:'00', txhash: '10', parentHash:'00'}]);
   await database.addTransactionsForNewAddress([
     {block: 200, from: 'tb1q2ye03p4jdcja4vn9ap4tfq0qcc6esw3zwthcau', to: 'tb1qr9d7z0es86sps5f2kefx5grpj4a5yvp4evj80z', value: '1000000', time: new Date('2019-05-07T14:27:36Z'), bkhash:'00', txhash: '01'},
@@ -57,6 +62,7 @@ async function instrumentDb() {
     {block: 180, from: 'tb1q2ye03p4jdcja4vn9ap4tfq0qcc6esw3zwthcau', to: 'tb1qr9d7z0es86sps5f2kefx5grpj4a5yvp4evj80y', value: '1000000', time: new Date('2019-05-07T14:14:06Z'), bkhash:'00', txhash: '0B'},
     {block: 180, from: 'tb1q2ye03p4jdcja4vn9ap4tfq0qcc6esw3zwthkau', to: 'tb1qr9d7z0es86sps5f2kefx5grpj4a5yvp4evj80y', value: '1000000', time: new Date('2019-05-07T14:14:06Z'), bkhash:'00', txhash: '0C'}
   ], 'tb1qr9d7z0es86sps5f2kefx5grpj4a5yvp4evj80z');
+  console.log(`instrumented DB`);
 }
 
 
@@ -108,12 +114,13 @@ describe('smoke tests', () => {
   /* The tests. */
   /**************/
 
-  it('validates a total of .03 eth was transferred from eth_acct1 to eth_acct2', (done) => {
+  it('validates a total of .03 btc was transferred from btc_acct1 to btc_acct2', (done) => {
     chai.request('http://' + HOST + ':' + PORT)
       .get('/get-transactions/'+btc_acct1+'/'+btc_acct2)
       .set({ "Authorization": `Bearer ${TOKEN}` })
       .then(function(res) {
         var reso = JSON.parse(res.text);
+        console.log(res.text);
         assert.isTrue(reso.tally == (3 * POINT_0_1_BTC_IN_SATOSHIS));
         assert.isTrue(Array.isArray(reso.transactions));
         assert.isTrue(reso.transactions.length == 3);
@@ -128,7 +135,7 @@ describe('smoke tests', () => {
       });
   });
 
-  it('validates .02 eth was transferred from eth_acct1 to eth_acct2 in the last 2 transactions', (done) => {
+  it('validates .02 btc was transferred from btc_acct1 to btc_acct2 in the last 2 transactions', (done) => {
     chai.request('http://' + HOST + ':' + PORT)
       .get('/get-transactions/'+btc_acct1+'/'+btc_acct2+'?max-most-recent=2')
       .set({ "Authorization": `Bearer ${TOKEN}` })
@@ -149,7 +156,7 @@ describe('smoke tests', () => {
       });
   });
 
-  it('validates .02 eth was transferred in 2 transactions from eth_acct1 to eth_acct2 since 2019-05-07T14:18:00Z', (done) => {
+  it('validates .02 btc was transferred in 2 transactions from btc_acct1 to btc_acct2 since 2019-05-07T14:18:00Z', (done) => {
     const sinceStr = '2019-05-07T14:18:00Z';
     chai.request('http://' + HOST + ':' + PORT)
       .get('/get-transactions/'+btc_acct1+'/'+btc_acct2+'?since='+sinceStr)
@@ -171,7 +178,7 @@ describe('smoke tests', () => {
       });
   });
 
-  it('validates .02 eth was transferred from eth_acct1 to eth_acct2 since 2019-05-07T14:18:00Z as tally only', (done) => {
+  it('validates .02 btc was transferred from btc_acct1 to btc_acct2 since 2019-05-07T14:18:00Z as tally only', (done) => {
     const sinceStr = '2019-05-07T14:18:00Z';
     chai.request('http://' + HOST + ':' + PORT)
       .get('/get-transactions/'+btc_acct1+'/'+btc_acct2+'?since='+sinceStr+'&tally-only=true')

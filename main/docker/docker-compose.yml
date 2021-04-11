@@ -1,11 +1,11 @@
 version: '3'
 services:
-  oh-eth:
+  oh-btc:
     build: 
       context: .
       dockerfile: ./main/docker/Dockerfile
-    image: oh-eth
-    container_name: oh-eth
+    image: oh-btc
+    container_name: oh-btc
     ports:
     - "8080:8080"
     command: > 
