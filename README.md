@@ -1,10 +1,10 @@
-<p align="center"><a href="https://github.com/overhide"><img src="./.github/logo.png" width="200px"/></a></p>
+<p align="center"><a href="https://overhide.io"><img src="./.github/logo.png" width="200px"/></a></p>
 
 # overhide-bitcoin
 
 [![CircleCI](https://circleci.com/gh/overhide/overhide-bitcoin.svg?style=svg)](https://circleci.com/gh/overhide/overhide-bitcoin)
 
-[Bitcoin](https://www.bitcoin.org/) implementation of the [overhide](https://overhide.io) remuneration API.
+[Bitcoin](https://www.bitcoin.org/) implementation of the [overhide.io](https://overhide.io) remuneration API.
 
 Read about the API and play with it here:
 

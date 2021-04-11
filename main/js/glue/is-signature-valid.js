@@ -9,9 +9,6 @@ const debug = require('../lib/log.js').debug_fn("is-signature-valid");
 async function is_signature_valid({signature, message, address}) {
   if (typeof signature !== 'string' || typeof message !== 'string' || typeof address !== 'string') throw new Error('signature, message, address must be strings');
 
-  // check address valid on blockchain
-  address = address.toLowerCase();
-
   if (!await database.checkAddressIsTracked(address)) {
     const txs = await btc.getTransactionsForAddress(address);
     if (!txs || txs.length == 0) {

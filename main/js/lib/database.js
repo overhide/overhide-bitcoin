@@ -250,7 +250,7 @@ class Database {
           '${t.to}', 
           '${t.time.toISOString()}', 
           decode('${t.txhash}','hex'),
-          '${t.value}'
+          ${t.value}
         )`);
       txs = txs.join(',');
 
@@ -261,7 +261,7 @@ class Database {
           BEGIN;
 
             INSERT INTO btctransactions (block, fromaddr, toaddr, transactionts, txhash, value) VALUES ${txs} 
-              ON CONFLICT (block, txhash, toaddr) DO UPDATE;
+              ON CONFLICT (block, txhash, toaddr) DO UPDATE SET fromaddr = EXCLUDED.fromaddr;
 
             INSERT INTO btctransactions (block, fromaddr, toaddr, transactionts, txhash, value) 
              (
@@ -290,7 +290,6 @@ class Database {
   async checkAddressIsTracked(address) {
     this[checkInit]();
     try {
-      address = `'${address}'`;
       const query = `UPDATE btctrackedaddress SET checked = NOW() WHERE address = '${address}'
                      AND NOT EXISTS (SELECT 1 FROM btctransactions WHERE fromaddr = '${address}' AND toaddr IS NULL)
                      AND NOT EXISTS (SELECT 1 FROM btctransactions WHERE toaddr = '${address}' AND fromaddr IS NULL);`;

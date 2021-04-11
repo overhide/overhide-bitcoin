@@ -21,7 +21,6 @@ const DEBUG = process.env.DEBUG || process.env.npm_config_DEBUG || process.env.n
 const SALT = process.env.SALT || process.env.npm_config_SALT || process.env.npm_package_config_SALT;
 const TOKEN_URL = process.env.TOKEN_URL || process.env.npm_config_TOKEN_URL || process.env.npm_package_config_TOKEN_URL;
 const ISPROD = process.env.ISPROD || process.env.npm_config_ISPROD || process.env.npm_package_config_ISPROD || false;
-const NETWORK_TYPE = process.env.NETWORK_TYPE || process.env.npm_config_NETWORK_TYPE || process.env.npm_package_config_NETWORK_TYPE;
 const RATE_LIMIT_WINDOW_MS = process.env.RATE_LIMIT_WINDOW_MS || process.env.npm_config_RATE_LIMIT_WINDOW_MS || process.env.npm_package_config_RATE_LIMIT_WINDOW_MS || 60000;
 const RATE_LIMIT_MAX_REQUESTS_PER_WINDOW = process.env.RATE_LIMIT_MAX_REQUESTS_PER_WINDOW || process.env.npm_config_RATE_LIMIT_MAX_REQUESTS_PER_WINDOW || process.env.npm_package_config_RATE_LIMIT_MAX_REQUESTS_PER_WINDOW || 10;
 const EXPECTED_CONFIRMATIONS = process.env.EXPECTED_CONFIRMATIONS || process.env.npm_config_EXPECTED_CONFIRMATIONS || process.env.npm_package_config_EXPECTED_CONFIRMATIONS || 7;
@@ -71,8 +70,7 @@ log("CONFIG:\n%O", ((cfg) => {
 
 // WORKER JOBS
 if (IS_WORKER) {
-  // TODO
-  //require('./jobs/update-latest')();
+  require('./jobs/update-latest')();
 }
 
 // START THE APPLICATION
@@ -105,8 +103,6 @@ function onSignal() {
 }
 
 async function onHealthCheck() {
-  // TODO
-  require('./jobs/update-latest')();
   const btcMetrics = btc.metrics();
   var healthy = btcMetrics.errorsDelta === 0;
   if (!healthy) {

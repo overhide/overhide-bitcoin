@@ -5,7 +5,7 @@ const fetch = require('node-fetch');
 const log = require('./log.js').fn("btc-chain");
 const database = require('../lib/database.js');
 const bitcoinMessage = require('bitcoinjs-message')
-var Bitcoin = require('bitcoinjs-lib');
+const Bitcoin = require('bitcoinjs-lib');
 
 const ENCODING = 'utf-8';
 const HASH_ALGO = 'sha256';
@@ -238,7 +238,7 @@ class BtcChain {
       var txs = []
       let beforeClause = ``;
       for(;;) {
-        const url = `https://api.blockcypher.com/v1/btc/${this[ctx].btc_network}/addrs/${address}/full${beforeClause}`;
+        const url = `https://blockstream.info/${this[ctx].apiPrefix}/api/address/${address}/txs${beforeClause}`;
         let response = await fetch(url, {
           method: 'GET', headers: {
             'Content-Type': 'text/plain',
@@ -249,40 +249,28 @@ class BtcChain {
           let text = await response.text();
           throw `GET ${url} code: ${response.status} error: ${text}`;
         }
-        response = await response.json();
-        const theseTxs = response.txs
-        .filter(t => t.inputs.length === 1 && 'addresses' in t.inputs[0] && t.inputs[0].addresses.length === 1)
-        .filter(t => !!t.block_height && !!t.block_hash)
-        .flatMap(t => t.outputs
-          .filter(o => o.addresses.length === 1 && o.addresses[0] == address)
+        const theseTxs = (await response.json())
+        .filter(t => t.vin.length === 1)
+        .filter(t => !!t.status.block_height && !!t.status.block_hash)
+        .filter(t => t.vout.length === 2)
+        .flatMap(t => t.vout
           .map(o => {
             return {
-              block: t.block_height,
-              from: t.inputs[0].addresses[0],
-              to: o.addresses[0],
-              value: o.value,
-              time: new Date(t.received),
-              bkhash: t.block_hash,
-              txhash: t.hash
+              block: t.status.block_height,
+              from: t.vin[0].prevout.scriptpubkey_address,
+              to: o.scriptpubkey_address,
+              value: parseInt(o.value),
+              time: new Date(t.status.block_time * 1000),
+              bkhash: t.status.block_hash,
+              txhash: t.txid
             };
           }));
         txs = [...txs,...theseTxs];
-        if (!('hasMore' in response)) break;
+        if (theseTxs.length < 25) break;
         debug(`more results from for ${address}, fetching more`);
-        beforeClause = `?before=${Math.min(txs.map(t => t.block))}`;
+        beforeClause = `/chain/${lastTx}`;
       }
       
-      txs = txs.map(r => {
-        return {
-          block: r.blockNumber,
-          from: r.from,
-          to: r.to,
-          bkhash: r.blockHash,
-          txhash: r.txhash,
-          value: r.value,
-          time: new Date(+r.timeStamp * 1000)
-        };
-      });
     } catch (err) {
       this[metrics].errors++;
       throw err;
@@ -302,7 +290,7 @@ class BtcChain {
    */
   isSignatureValid(address, signature, message) {
     this[checkInit]();
-    return (bitcoinMessage.verify(message, address, signature));
+    return (bitcoinMessage.verify(message, address, signature, null, true));
   }
 
   /**

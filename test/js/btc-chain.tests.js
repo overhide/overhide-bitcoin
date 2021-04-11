@@ -2,7 +2,7 @@ const { expect } = require('chai');
 const chai = require('chai');
 const assert = chai.assert;
 const mock = require('mock-require');
-const blockcypherBuilder = require('./blockcypher-response-builder.js');
+const blockBuilder = require('./block-response-builder.js');
 
 mock('node-fetch', async (url) => {
   if (url.match(/all_txs/)) {
@@ -10,7 +10,7 @@ mock('node-fetch', async (url) => {
       status: 200,
       text: async () => 'OK',
       json: async () => {
-        const built = new blockcypherBuilder("sourceAddress1");
+        const built = new blockBuilder("sourceAddress1");
         const tx1 = built.addTx("2021-03-30T01:00:00.000Z", null, null);
         tx1.addInput(["sourceAddress1"]);
         tx1.addOutput(1000, ["all_txs"]);
@@ -49,7 +49,7 @@ mock('node-fetch', async (url) => {
       status: 200,
       text: async () => 'OK',
       json: async () => {
-        const built = new blockcypherBuilder("sourceAddress1");
+        const built = new blockBuilder("sourceAddress1");
         const tx3 = built.addTx("2021-03-29T01:00:00.000Z", "004", 400);
         tx3.addInput(["sourceAddress1"]);
         tx3.addOutput(250, ["hasMore_txs"]);
@@ -63,7 +63,7 @@ mock('node-fetch', async (url) => {
       status: 200,
       text: async () => 'OK',
       json: async () => {
-        const built = new blockcypherBuilder("sourceAddress1");
+        const built = new blockBuilder("sourceAddress1");
         const tx2 = built.addTx("2021-03-30T02:00:00.000Z", "007", 700);
         tx2.addInput(["sourceAddress1"]);
         tx2.addOutput(1250, ["newer_txs"]);
@@ -77,7 +77,7 @@ mock('node-fetch', async (url) => {
       status: 200,
       text: async () => 'OK',
       json: async () => {
-        const built = new blockcypherBuilder("sourceAddress1");
+        const built = new blockBuilder("sourceAddress1");
         const tx3 = built.addTx("2021-03-29T01:00:00.000Z", "004", 400);
         tx3.addInput(["sourceAddress1"]);
         tx3.addOutput(250, ["hasMore_txs"]);
@@ -91,7 +91,7 @@ mock('node-fetch', async (url) => {
       status: 200,
       text: async () => 'OK',
       json: async () => {
-        const built = new blockcypherBuilder("sourceAddress1");
+        const built = new blockBuilder("sourceAddress1");
         built.setHasMore();
         const tx2 = built.addTx("2021-03-30T02:00:00.000Z", "007", 700);
         tx2.addInput(["sourceAddress1"]);

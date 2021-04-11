@@ -1,6 +1,7 @@
 "use strict";
 
 const database = require('../lib/database.js');
+const btc = require('../lib/btc-chain.js');
 
 const log = require('../lib/log.js').fn("get-transactions");
 const debug = require('../lib/log.js').debug_fn("get-transactions");
@@ -11,14 +12,13 @@ async function get_transactions({fromAddress, toAddress, maxMostRecent = null, s
   if (typeof fromAddress !== 'string' || typeof toAddress !== 'string') throw new Error('fromAddress and toAddress must be strings');
   fromAddress = fromAddress.toLowerCase();
   toAddress = toAddress.toLowerCase();
-  if (! fromAddress.startsWith('0x') || ! toAddress.startsWith('0x')) throw new Error('fromAddress and toAddress must start with 0x');
 
   if (!await database.checkAddressIsTracked(fromAddress)) {
-    await database.addTransactionsForNewAddress(await btcerscan.getTransactionsForAddress(fromAddress), fromAddress);    
+    await database.addTransactionsForNewAddress(await btc.getTransactionsForAddress(fromAddress), fromAddress);    
   }
 
   if (!await database.checkAddressIsTracked(toAddress)) {
-    await database.addTransactionsForNewAddress(await btcerscan.getTransactionsForAddress(toAddress), toAddress);        
+    await database.addTransactionsForNewAddress(await btc.getTransactionsForAddress(toAddress), toAddress);        
   }
 
   var txs = await database.getTransactionsFromTo(fromAddress, toAddress);
