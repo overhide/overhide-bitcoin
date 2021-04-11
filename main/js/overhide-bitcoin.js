@@ -105,6 +105,7 @@ function onSignal() {
 }
 
 async function onHealthCheck() {
+  // TODO
   require('./jobs/update-latest')();
   const btcMetrics = btc.metrics();
   var healthy = btcMetrics.errorsDelta === 0;

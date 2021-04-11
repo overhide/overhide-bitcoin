@@ -45,7 +45,7 @@ class Swagger {
     this[ctx] = {
       url: base_url,
       path: swagger_endpoints_path,
-      network: isProd ? "mainnet" | "testnet"
+      network: isProd ? "mainnet" : "testnet"
     };
     return this;
   }
