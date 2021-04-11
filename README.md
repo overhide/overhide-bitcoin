@@ -30,7 +30,7 @@ These steps assume Docker is available.
 On Windows, the `npm run clean` script assumes *PowerShell* is setup and provisioned: runs with `@powershell`.  Ensure *PowerShell* is
 setup or don't use this script.
 
-Please review the *Configuration* section below as at the very least *ETHERSCAN_KEY* must be configured to run the tests in this package.  
+Please review the *Configuration* section below.
 
 Read the rest of this README for details.
 
@@ -43,13 +43,12 @@ To build a non-test container see *Building Docker Image* section below.
 1. `npm install --global --production windows-build-tools`
 1. `npm install --no-optional` -- bring in dependencies
 1. copy *./.npmrc.sample* to *./npmrc.dev*
-1. edit *./.npmrc.dev* and set "ETHERSCAN_KEY" to your https://etherscan.io API key 
+1. edit *./.npmrc.dev*, but the defaults are mostly OK
 1. `npm run compose-dev` -- build and start *overhide-bitcoin* Docker container
 1. jump to "First Time DB Setup" section for the first-time DB setup
 1. jump to "Database Evolutions" section, especially the "For Docker" subsection
-1. your *oh-eth* container failed since your DB wasn't setup--now it is--find your *oh-eth* container name: `docker ps -a`; look for *oh-eth* with an "Exited" status.
+1. your *oh-btc* container failed since your DB wasn't setup--now it is--find your *oh-btc* container name: `docker ps -a`; look for *oh-btc* with an "Exited" status.
 1. `npm test` -- run tests against above
-1. `npm run set-auth` -- add user to authenticate against service
 1. `point browser at http://editor.swagger.io/?url=http://localhost:8080/swagger.json` -- to use the API
 
 From now on you'll need to use the following commands to stop/restart things:
@@ -89,7 +88,7 @@ All the configuration points for the app are listed in [.npmrc.sample](.npmrc.sa
 
 Configuration defaults in See [.npmrc.sample](.npmrc.sample) are reasonable only for testing.  
 
-These *npm* configuration points are override-able with `npm config edit` or `npm config set` (see [npm-config](https://docs.npmjs.com/misc/config)): e.g. `npm config set overhide-bitcoin:ETHERSCAN_KEY  new-value` sets a new-value for *ETHERSCAN_KEY* in the user's *~/.npmrc*.
+These *npm* configuration points are override-able with `npm config edit` or `npm config set` (see [npm-config](https://docs.npmjs.com/misc/config)).
 
 For Docker compose environments configuration settings are taken from:
 
@@ -106,25 +105,16 @@ Some notable configuration points for *overhide-bitcoin*:
 
 | *Configuration Point* | *Description* | *Sample Value* |
 | --- | --- | --- |
-| OH_ETH_PORT | *overhide-bitcoin*'s port | 8080 |
-| OH_ETH_HOST | *overhide-bitcoin*'s host | localhost |
+| PORT | *overhide-bitcoin*'s port | 8080 |
+| HOST | *overhide-bitcoin*'s host | localhost |
 | BASE_URL | `host:port` *base URL* as used from outside (of load-balancer) to access service | localhost:8080
 | DEBUG | see 'Logging' section below | overhide-bitcoin:*,-overhide-bitcoin:is-signature-valid:txs,-overhide-bitcoin:get-transactions:txs |
 | SALT | Salt for bearer-token validation (see *Security* above) | c0c0nut |
 | TOKEN_URL | Token validation URL (see *Security* above) | https://token.overhide.io/validate |
 | RATE_LIMIT_WINDOW_MS | Duration of API rate limiting window (milliseconds) | 60000 |
 | RATE_LIMIT_MAX_REQUESTS_PER_WINDOW | Number of API calls per rate limiting window | 30 |
-| INFURA_PROJECT_ID | The project ID from https://infura.io | redacted |
-| INFURA_TYPE | The network type (e.g. 'mainnet') | rinkeby |
-| SEED_OLDER_NUMBER_BLOCKS | Controls the number of blocks to seed towards block 0 during each run of the back-fill job | 0 |
-| SEED_OLDER_JOB_PERIOD_MILLIS | Controls how often the back-fill job is called on each node | 30000 |
 | EXPECTED_CONFIRMATIONS | Number of confirmations before transaction is considered valid | 2 |
 | IS_WORKER | Enable this on one (and only one) node -- runs worker processes that use up API limits | true |
-
-Take special note of `SEED_OLDER_NUMBER_BLOCKS`.  This service, when started, starts back-filling blocks into the database until it reaches genesis.  If this is set to 0, no back-filling will occur.  This is the value set in [.npmrc.sample](.npmrc.sample).  If you do not back-fill blocks, the service will only
-function properly for blocks since the service came online.
-
-Adjust the `SEED_OLDER_NUMBER_BLOCKS` and `SEED_OLDER_JOB_PERIOD_MILLIS` to match your https://infura.io API limits, number of environments (e.g. mainnet, rinkeby) and number of nodes of this service running on each environment.  Leave room for normal usage API calls.
 
 # First Time DB Setup
 
@@ -134,20 +124,20 @@ For localhost Docker, `psql` into the container:
 
 ```
 npm run psql-dev
-\c "oh-eth"
+\c "oh-btc"
 \dt
 ```
 
 
 
-The 'adam' role and 'oh-eth' DB should already be created and connected to with the above command (as per `.npmrc.dev` environment passed into docker-compose).
+The 'adam' role and 'oh-btc' DB should already be created and connected to with the above command (as per `.npmrc.dev` environment passed into docker-compose).
 
 If not, to manually create:
 
 ```
-postgres=# create database "oh-eth";
+postgres=# create database "oh-btc";
 postgres=# create user adam with encrypted password 'c0c0nut';
-postgres=# grant all privileges on database "oh-eth" to adam;
+postgres=# grant all privileges on database "oh-btc" to adam;
 ```
 
 Make sure to set the configuration points in your *.npmrc* appropriately.
@@ -175,14 +165,14 @@ To check the database pre/post evolution (first time DB setup already done):
 
 ```
 npm run psql-dev
-\dt oh-eth.*
+\dt oh-btc.*
 ```
 
 If you need to select role and DB:
 
 ```
-set role oh-eth;
-\c oh-eth;
+set role oh-btc;
+\c oh-btc;
 ```
 
 More commands:  https://gist.github.com/apolloclark/ea5466d5929e63043dcf
@@ -191,7 +181,7 @@ More commands:  https://gist.github.com/apolloclark/ea5466d5929e63043dcf
 
 If running using Docker, jump into a container to run the evolution:
 
-`docker run -it --rm --link postgres:postgres --network oh_default oh-eth /bin/sh`
+`docker run -it --rm --link postgres:postgres --network oh_default oh-btc /bin/sh`
 
 Then run the evolution:
 
@@ -207,7 +197,7 @@ Non-debug (error/warning/audit) logging is programmatically enabled by default d
 
 Setting *DEBUG* to "overhide-bitcoin:*" will enable all debug logging.  This will be very verbose.  It's likely desirable to target debug logging, e.g:
 
-`npm config set overhide-bitcoin:DEBUG "overhide-bitcoin:*,-overhide-bitcoin:is-signature-valid:txs,-overhide-bitcoin:get-transactions:txs"`
+`npm config set overhide-bitcoin:DEBUG "overhide-bitcoin:*"`
 
 # Notes on Running the Development Environment
 
