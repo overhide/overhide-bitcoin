@@ -15,6 +15,7 @@ const POSTGRES_DB = process.env.POSTGRES_DB || process.env.npm_config_POSTGRES_D
 const POSTGRES_USER = process.env.POSTGRES_USER || process.env.npm_config_POSTGRES_USER || process.env.npm_package_config_POSTGRES_USER || 'adam';
 const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD || process.env.npm_config_POSTGRES_PASSWORD || process.env.npm_package_config_POSTGRES_PASSWORD || 'c0c0nut';
 const POSTGRES_SSL = process.env.POSTGRES_SSL || process.env.npm_config_POSTGRES_SSL || process.env.npm_package_config_POSTGRES_SSL;
+const EXPECTED_CONFIRMATIONS = process.env.EXPECTED_CONFIRMATIONS || process.env.npm_config_EXPECTED_CONFIRMATIONS || process.env.npm_package_config_EXPECTED_CONFIRMATIONS || 7;
 
 
 const chai = require('chai');
@@ -28,7 +29,8 @@ const database = require('../../main/js/lib/database.js').init({
   pgdatabase: POSTGRES_DB,
   pguser: POSTGRES_USER,
   pgpassword: POSTGRES_PASSWORD,
-  pgssl: POSTGRES_SSL
+  pgssl: POSTGRES_SSL,
+  confirmations: EXPECTED_CONFIRMATIONS
 });
 const uuid = require('uuid');
 const assert = chai.assert;

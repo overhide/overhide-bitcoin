@@ -129,6 +129,7 @@ class Database {
               (
                 SELECT block, fromaddr, toaddr, blockts, txhash, value FROM btcstaging S
                   JOIN btctrackedaddress A ON S.fromaddr = A.address OR S.toaddr = A.address
+                  WHERE S.block >= ${block - 3}
               )
               ON CONFLICT (block, txhash, toaddr) DO NOTHING;
 
@@ -182,6 +183,7 @@ class Database {
               (
                 SELECT block, fromaddr, toaddr, blockts, txhash, value FROM btcstaging S
                   JOIN btctrackedaddress A ON S.fromaddr = A.address OR S.toaddr = A.address
+                  WHERE S.block >= ${block - 3}
               )
               ON CONFLICT (block, txhash, toaddr) DO NOTHING;
               
@@ -236,7 +238,7 @@ class Database {
    async addTransactionsForNewAddress(transactions, address) {
     this[checkInit]();
     try {
-      const maxBlock = (await this.getMaxBlock()) - this[ctx].confirmations;
+      const maxBlock = (await this.getMaxBlock());
 
       transactions = transactions.filter(t => t.block <= maxBlock);    
 
@@ -266,7 +268,8 @@ class Database {
             INSERT INTO btctransactions (block, fromaddr, toaddr, transactionts, txhash, value) 
              (
                 SELECT block, fromaddr, toaddr, blockts, txhash, value FROM btcstaging S
-                  WHERE S.fromaddr = ${address} OR S.toaddr = ${address}
+                  WHERE (S.fromaddr = ${address} OR S.toaddr = ${address})
+                  AND S.block >= ${maxBlock - 3}
              )
              ON CONFLICT (block, txhash, toaddr) DO NOTHING;
           

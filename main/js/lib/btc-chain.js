@@ -249,7 +249,8 @@ class BtcChain {
           let text = await response.text();
           throw `GET ${url} code: ${response.status} error: ${text}`;
         }
-        const theseTxs = (await response.json())
+        const txsFromJson = await response.json();
+        const theseTxs = txsFromJson
         .filter(t => t.vin.length === 1)
         .filter(t => !!t.status.block_height && !!t.status.block_hash)
         .filter(t => t.vout.length === 2)
@@ -266,9 +267,9 @@ class BtcChain {
             };
           }));
         txs = [...txs,...theseTxs];
-        if (theseTxs.length < 25) break;
-        debug(`more results from for ${address}, fetching more`);
-        beforeClause = `/chain/${lastTx}`;
+        if (txsFromJson.length < 25) break;
+        log(`more results from for ${address}, fetching more`);
+        beforeClause = `/chain/${txsFromJson[txsFromJson.length - 1].txid}`;
       }
       
     } catch (err) {

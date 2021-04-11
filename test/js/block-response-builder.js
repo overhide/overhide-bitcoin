@@ -3,8 +3,8 @@
 class Output {
   result = {};
 
-  constructor(value, addresses) {
-    if (!!addresses) this.result['addresses'] = addresses;
+  constructor(value, address) {
+    if (!!address) this.result['scriptpubkey_address'] = address;
     if (!!value) this.result['value'] = value;
   }
 }
@@ -12,54 +12,45 @@ class Output {
 class Input {
   result = {};
 
-  constructor(addresses) {
-    if (!!addresses) this.result['addresses'] = addresses;
+  constructor(address) {
+    if (!!address) this.result['prevout'] = {scriptpubkey_address: address};
   }
 }
 
 class Tx {
-  result = {};
+  result = {status: {}};
 
-  constructor(received, block_hash, block_height) {
-    if (!!received) this.result['received'] = received;
-    if (!!block_hash) this.result['block_hash'] = block_hash;
-    if (!!block_height) this.result['block_height'] = block_height;
+  constructor(id, timestamp, block_hash, block_height) {
+    if (!!id) this.result['txid'] = id;
+    if (!!timestamp) this.result.status['block_time'] = Date.parse(timestamp) / 1000;
+    if (!!block_hash) this.result.status['block_hash'] = block_hash;
+    if (!!block_height) this.result.status['block_height'] = block_height;
   }
 
-  addInput(addresses) {
-    if (!('inputs' in this.result)) this.result['inputs'] = [];
-    const newInput = new Input(addresses);
-    this.result['inputs'].push(newInput.result);
+  addInput(address) {
+    if (!('vin' in this.result)) this.result['vin'] = [];
+    const newInput = new Input(address);
+    this.result['vin'].push(newInput.result);
     return newInput;
   }
 
   addOutput(value, addresses) {
-    if (!('outputs' in this.result)) this.result['outputs'] = [];
+    if (!('vout' in this.result)) this.result['vout'] = [];
     const newOutput = new Output(value, addresses);
-    this.result['outputs'].push(newOutput.result);
+    this.result['vout'].push(newOutput.result);
     return newOutput;
   }
 }
 
 module.exports = class Builder {
-  result = {};
+  result = [];
 
-  /**
-   * @param {string} address -- from address for response
-   */
-  constructor(address) {
-    if (!!address) this.result['address'] = address;
+  constructor() {
   }
 
-  setHasMore() {
-    this.result['hasMore'] = true;
-    return this;
-  }
-
-  addTx(received, block_hash, block_height) {
-    if (!('txs' in this.result)) this.result['txs'] = [];
-    const newTx = new Tx(received, block_hash, block_height);
-    this.result['txs'].push(newTx.result);
+  addTx(id, timestamp, block_hash, block_height) {
+    const newTx = new Tx(id, timestamp, block_hash, block_height);
+    this.result.push(newTx.result);
     return newTx;
   }
 }
