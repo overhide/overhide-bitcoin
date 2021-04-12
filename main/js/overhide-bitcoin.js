@@ -24,7 +24,7 @@ const ISPROD = process.env.ISPROD || process.env.npm_config_ISPROD || process.en
 const RATE_LIMIT_WINDOW_MS = process.env.RATE_LIMIT_WINDOW_MS || process.env.npm_config_RATE_LIMIT_WINDOW_MS || process.env.npm_package_config_RATE_LIMIT_WINDOW_MS || 60000;
 const RATE_LIMIT_MAX_REQUESTS_PER_WINDOW = process.env.RATE_LIMIT_MAX_REQUESTS_PER_WINDOW || process.env.npm_config_RATE_LIMIT_MAX_REQUESTS_PER_WINDOW || process.env.npm_package_config_RATE_LIMIT_MAX_REQUESTS_PER_WINDOW || 10;
 const EXPECTED_CONFIRMATIONS = process.env.EXPECTED_CONFIRMATIONS || process.env.npm_config_EXPECTED_CONFIRMATIONS || process.env.npm_package_config_EXPECTED_CONFIRMATIONS || 7;
-const IS_WORKER = process.env.IS_WORKER || process.env.npm_config_IS_WORKER || process.env.npm_package_config_IS_WORKER || true;
+const IS_WORKER = process.env.IS_WORKER || process.env.npm_config_IS_WORKER || process.env.npm_package_config_IS_WORKER;
 const POSTGRES_HOST = process.env.POSTGRES_HOST || process.env.npm_config_POSTGRES_HOST || process.env.npm_package_config_POSTGRES_HOST || 'localhost'
 const POSTGRES_PORT = process.env.POSTGRES_PORT || process.env.npm_config_POSTGRES_PORT || process.env.npm_package_config_POSTGRES_PORT || 5432
 const POSTGRES_DB = process.env.POSTGRES_DB || process.env.npm_config_POSTGRES_DB || process.env.npm_package_config_POSTGRES_DB || 'oh-btc';
@@ -53,7 +53,8 @@ const ctx_config = {
   pgdatabase: POSTGRES_DB,
   pguser: POSTGRES_USER,
   pgpassword: POSTGRES_PASSWORD,
-  pgssl: POSTGRES_SSL
+  pgssl: POSTGRES_SSL,
+  isWorker: !!IS_WORKER && /true/i.test(IS_WORKER)
 };
 const log = require('./lib/log.js').init(ctx_config).fn("app");
 const debug = require('./lib/log.js').init(ctx_config).debug_fn("app");
@@ -69,7 +70,7 @@ log("CONFIG:\n%O", ((cfg) => {
 })({...ctx_config}));
 
 // WORKER JOBS
-if (IS_WORKER) {
+if (ctx_config.isWorker) {
   require('./jobs/update-latest')();
 }
 
@@ -111,7 +112,9 @@ async function onHealthCheck() {
     throw new HealthCheckError('healtcheck failed', [reason])
   }
   let status = {
+    id: process.pid,
     version: VERSION,
+    worker: ctx_config.isWorker,
     healthy: healthy ? true : false,
     metrics: {
       btc: btcMetrics
