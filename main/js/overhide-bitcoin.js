@@ -105,9 +105,10 @@ function onSignal() {
 
 async function onHealthCheck() {
   const btcMetrics = btc.metrics();
-  var healthy = btcMetrics.errorsDelta === 0;
+  const dbMetrics = database.metrics();
+  var healthy = btcMetrics.errorsDelta === 0 && dbMetrics.errorsDelta === 0;
   if (!healthy) {
-    let reason = `onHealthCheck failed (btc.errorsDelta: ${btcMetrics.errorsDelta})`;
+    let reason = `onHealthCheck failed (btc.errorsDelta: ${btcMetrics.errorsDelta})(db.errorsDelta: ${dbMetrics.errorsDelta})`;
     log(reason);
     throw new HealthCheckError('healtcheck failed', [reason])
   }
@@ -117,7 +118,8 @@ async function onHealthCheck() {
     worker: ctx_config.isWorker,
     healthy: healthy ? true : false,
     metrics: {
-      btc: btcMetrics
+      btcMetrics: btcMetrics,
+      dbMetrics: dbMetrics
     }
   };  
   return status;

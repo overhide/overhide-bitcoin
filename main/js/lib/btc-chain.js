@@ -218,6 +218,7 @@ class BtcChain {
         }
       });  
     } catch (err) {
+      this[metrics].errors++;
       throw err;
     }
   }
