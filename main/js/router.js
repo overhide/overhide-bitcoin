@@ -9,13 +9,14 @@ const swagger = require('./lib/swagger.js');
 
 const debug = require('./lib/log.js').debug_fn("router");
 const token = require('./lib/token.js').check.bind(require('./lib/token.js'));
+const throttle = require('./lib/throttle.js').check.bind(require('./lib/throttle.js'));
 
 router.use(allow_cors);
 
 /**
  * API spec handler: swagger.json
  */
-router.get('/swagger.json', (req, res, next) => {
+router.get('/swagger.json', throttle, (req, res, next) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(swagger.render());
 });
@@ -32,6 +33,8 @@ router.get('/swagger.json', (req, res, next) => {
  *        of [ledger-based authorizations](https://overhide.io/2019/03/20/why.html).
  * 
  *        All values in *satoshis*.
+ * 
+ *        Rate limits:  30 calls / minute / IP (across all overhide APIs), does not apply to vouchers for tallies.
  *      tags:
  *        - remuneration provider
  *      parameters:
@@ -143,7 +146,7 @@ router.get('/swagger.json', (req, res, next) => {
  *        429:
  *          $ref: "#/responses/429"
  */
-router.get('/get-transactions/:fromAddress/:toAddress', token, (req, rsp) => {
+router.get('/get-transactions/:fromAddress/:toAddress', token, throttle, (req, rsp) => {
     debug('handling get-transactions endpoint');
     (async () => {
         try {
@@ -178,6 +181,8 @@ router.get('/get-transactions/:fromAddress/:toAddress', token, (req, rsp) => {
  * 
  *       Only P2PKH, P2SH, Bech32 entries with a single input and one or two outputs are considered valid for the purposes
  *       of [ledger-based authorizations](https://overhide.io/2019/03/20/why.html).  
+ * 
+ *        Rate limits:  30 calls / minute / IP (across all overhide APIs), does not apply to `skip-ledger-check` calls.
  *     tags:
  *       - remuneration provider
  *     requestBody:
@@ -223,7 +228,7 @@ router.get('/get-transactions/:fromAddress/:toAddress', token, (req, rsp) => {
  *       429:
  *         $ref: "#/responses/429"
  */
-router.post('/is-signature-valid', token, (req, rsp) => {
+router.post('/is-signature-valid', token, throttle, (req, rsp) => {
     debug('handling is-signature-valid endpoint');
     (async () => {
         try {

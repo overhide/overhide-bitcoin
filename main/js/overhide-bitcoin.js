@@ -5,7 +5,6 @@ const ejs = require('ejs');
 const http = require('http');
 const os = require('os');
 const path = require('path');
-const rateLimit = require("express-rate-limit");
 const { createTerminus: terminus, HealthCheckError } = require('@godaddy/terminus');
 
 // CONFIGURATION CONSTANTS
@@ -23,6 +22,8 @@ const TOKEN_URL = process.env.TOKEN_URL || process.env.npm_config_TOKEN_URL || p
 const ISPROD = process.env.ISPROD || process.env.npm_config_ISPROD || process.env.npm_package_config_ISPROD || false;
 const RATE_LIMIT_WINDOW_MS = process.env.RATE_LIMIT_WINDOW_MS || process.env.npm_config_RATE_LIMIT_WINDOW_MS || process.env.npm_package_config_RATE_LIMIT_WINDOW_MS || 60000;
 const RATE_LIMIT_MAX_REQUESTS_PER_WINDOW = process.env.RATE_LIMIT_MAX_REQUESTS_PER_WINDOW || process.env.npm_config_RATE_LIMIT_MAX_REQUESTS_PER_WINDOW || process.env.npm_package_config_RATE_LIMIT_MAX_REQUESTS_PER_WINDOW || 10;
+const RATE_LIMIT_REDIS_URI = process.env.RATE_LIMIT_REDIS_URI || process.env.npm_config_RATE_LIMIT_REDIS_URI || process.env.npm_package_config_RATE_LIMIT_REDIS_URI || null;
+const RATE_LIMIT_REDIS_NAMESPACE = process.env.RATE_LIMIT_REDIS_NAMESPACE || process.env.npm_config_RATE_LIMIT_REDIS_NAMESPACE || process.env.npm_package_config_RATE_LIMIT_REDIS_NAMESPACE || "rate-limit";
 const EXPECTED_CONFIRMATIONS = process.env.EXPECTED_CONFIRMATIONS || process.env.npm_config_EXPECTED_CONFIRMATIONS || process.env.npm_package_config_EXPECTED_CONFIRMATIONS || 7;
 const IS_WORKER = process.env.IS_WORKER || process.env.npm_config_IS_WORKER || process.env.npm_package_config_IS_WORKER;
 const POSTGRES_HOST = process.env.POSTGRES_HOST || process.env.npm_config_POSTGRES_HOST || process.env.npm_package_config_POSTGRES_HOST || 'localhost'
@@ -45,6 +46,8 @@ const ctx_config = {
   isProd: !!ISPROD && /true/i.test(ISPROD),
   rateLimitWindowsMs: RATE_LIMIT_WINDOW_MS,
   rateLimitMax: RATE_LIMIT_MAX_REQUESTS_PER_WINDOW,
+  rateLimitRedis: RATE_LIMIT_REDIS_URI,
+  rateLimitRedisNamespace: RATE_LIMIT_REDIS_NAMESPACE,
   confirmations: EXPECTED_CONFIRMATIONS,
   base_url: BASE_URL,
   swagger_endpoints_path: __dirname + path.sep + 'router.js',
@@ -63,6 +66,7 @@ const btc = require('./lib/btc-chain.js').init(ctx_config);
 const database = require('./lib/database.js').init(ctx_config);
 const swagger = require('./lib/swagger.js').init(ctx_config);
 const token = require('./lib/token.js').init(ctx_config);
+const throttle = require('./lib/throttle.js').init(ctx_config);
 log("CONFIG:\n%O", ((cfg) => {
   cfg.pgpassword = cfg.pgpassword.replace(/.(?=.{2})/g,'*'); 
   cfg.salt = cfg.salt.replace(/.(?=.{2})/g,'*'); 
@@ -78,16 +82,9 @@ if (ctx_config.isWorker) {
 const app = express();
 const router = require('./router');
 
-// rate limiter
-const throttle = rateLimit({
-  windowMs: RATE_LIMIT_WINDOW_MS,
-  max: RATE_LIMIT_MAX_REQUESTS_PER_WINDOW
-});
-
 //app.enable("trust proxy"); // only if you're behind a reverse proxy (Heroku, Bluemix, AWS ELB, Nginx, etc)
 app.use(express.static(__dirname + `${path.sep}..${path.sep}static`));
 app.use(express.json());
-app.use(throttle);
 app.set('views', __dirname + `${path.sep}..${path.sep}static`);
 app.engine('html', ejs.renderFile);
 app.use("/", router);
