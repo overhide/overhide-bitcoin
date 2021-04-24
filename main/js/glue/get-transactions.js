@@ -2,13 +2,14 @@
 
 const database = require('../lib/database.js');
 const btc = require('../lib/btc-chain.js');
+const normalizer = require('../lib/normalizer.js');
 
 const log = require('../lib/log.js').fn("get-transactions");
 const debug = require('../lib/log.js').debug_fn("get-transactions");
 
 const EXPECTED_CONFIRMATIONS = process.env.EXPECTED_CONFIRMATIONS || process.env.npm_config_EXPECTED_CONFIRMATIONS || process.env.npm_package_config_EXPECTED_CONFIRMATIONS || 6;
 
-async function get_transactions({fromAddress, toAddress, maxMostRecent = null, since = null, tallyOnly = false, includeRefunds = false, confirmations = 0}) {
+async function get_transactions({fromAddress, toAddress, maxMostRecent = null, since = null, tallyOnly = false, tallyDollars = false, includeRefunds = false, confirmations = 0}) {
   if (typeof fromAddress !== 'string' || typeof toAddress !== 'string') throw new Error('fromAddress and toAddress must be strings');
   fromAddress = fromAddress.toLowerCase();
   toAddress = toAddress.toLowerCase();
@@ -53,7 +54,12 @@ async function get_transactions({fromAddress, toAddress, maxMostRecent = null, s
     tally += value;
     txsSeen++;
   }  
-  return tallyOnly ? {tally: tally} : {tally: tally, transactions: result_txs};
+
+  if (tallyDollars) {
+    tally = await normalizer.transform(result_txs);
+  }
+
+  return tallyOnly || tallyDollars ? {tally: tally} : {tally: tally, transactions: result_txs};
 }
 
 module.exports = get_transactions;

@@ -20,6 +20,7 @@ const DEBUG = process.env.DEBUG || process.env.npm_config_DEBUG || process.env.n
 const SALT = process.env.SALT || process.env.npm_config_SALT || process.env.npm_package_config_SALT;
 const TOKEN_URL = process.env.TOKEN_URL || process.env.npm_config_TOKEN_URL || process.env.npm_package_config_TOKEN_URL;
 const ISPROD = process.env.ISPROD || process.env.npm_config_ISPROD || process.env.npm_package_config_ISPROD || false;
+const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN || process.env.npm_config_INTERNAL_TOKEN || process.env.npm_package_config_INTERNAL_TOKEN;
 const RATE_LIMIT_WINDOW_MS = process.env.RATE_LIMIT_WINDOW_MS || process.env.npm_config_RATE_LIMIT_WINDOW_MS || process.env.npm_package_config_RATE_LIMIT_WINDOW_MS || 60000;
 const RATE_LIMIT_MAX_REQUESTS_PER_WINDOW = process.env.RATE_LIMIT_MAX_REQUESTS_PER_WINDOW || process.env.npm_config_RATE_LIMIT_MAX_REQUESTS_PER_WINDOW || process.env.npm_package_config_RATE_LIMIT_MAX_REQUESTS_PER_WINDOW || 10;
 const RATE_LIMIT_REDIS_URI = process.env.RATE_LIMIT_REDIS_URI || process.env.npm_config_RATE_LIMIT_REDIS_URI || process.env.npm_package_config_RATE_LIMIT_REDIS_URI || null;
@@ -42,6 +43,7 @@ const ctx_config = {
   port: PORT,
   debug: DEBUG,
   salt: SALT,
+  internalToken: INTERNAL_TOKEN,
   tokenUrl: TOKEN_URL,
   isProd: !!ISPROD && /true/i.test(ISPROD),
   rateLimitWindowsMs: RATE_LIMIT_WINDOW_MS,
@@ -67,9 +69,11 @@ const database = require('./lib/database.js').init(ctx_config);
 const swagger = require('./lib/swagger.js').init(ctx_config);
 const token = require('./lib/token.js').init(ctx_config);
 const throttle = require('./lib/throttle.js').init(ctx_config);
+const normalizer = require('./lib/normalizer.js').init(ctx_config);
 log("CONFIG:\n%O", ((cfg) => {
   cfg.pgpassword = cfg.pgpassword.replace(/.(?=.{2})/g,'*'); 
   cfg.salt = cfg.salt.replace(/.(?=.{2})/g,'*'); 
+  cfg.internalToken = cfg.internalToken.replace(/.(?=.{2})/g,'*'); 
   return cfg;
 })({...ctx_config}));
 
@@ -103,9 +107,10 @@ function onSignal() {
 async function onHealthCheck() {
   const btcMetrics = btc.metrics();
   const dbMetrics = database.metrics();
-  var healthy = btcMetrics.errorsDelta === 0 && dbMetrics.errorsDelta === 0;
+  const normalizerMetrics = normalizer.metrics();
+  var healthy = btcMetrics.errorsDelta === 0 && dbMetrics.errorsDelta === 0 && normalizerMetrics.errorsDelta === 0;
   if (!healthy) {
-    let reason = `onHealthCheck failed (btc.errorsDelta: ${btcMetrics.errorsDelta})(db.errorsDelta: ${dbMetrics.errorsDelta})`;
+    let reason = `onHealthCheck failed (btc.errorsDelta: ${btcMetrics.errorsDelta})(db.errorsDelta: ${dbMetrics.errorsDelta})(normalizer.errorsDelta: ${normalizerMetrics.errorsDelta})`;
     log(reason);
     throw new HealthCheckError('healtcheck failed', [reason])
   }
@@ -116,7 +121,8 @@ async function onHealthCheck() {
     healthy: healthy ? true : false,
     metrics: {
       btcMetrics: btcMetrics,
-      dbMetrics: dbMetrics
+      dbMetrics: dbMetrics,
+      normalizer: normalizerMetrics
     }
   };  
   return status;

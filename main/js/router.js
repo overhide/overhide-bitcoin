@@ -90,6 +90,16 @@ router.get('/swagger.json', throttle, (req, res, next) => {
  *            If not present or set to anything but `true` then the 200/OK response will list individual *transactions* in
  *            addition to the *tally*.  
  *        - in: query
+ *          name: tally-dollars
+ *          required: false
+ *          schema:
+ *            type: boolean
+ *          description: |
+ *            If present and set to `true`, then the 200/OK response will not list individual *transactions*, just the
+ *            *tally* in US dollars.
+ * 
+ *            All transactions are exchanged to USD at an approximate (highest) exchange rate close to the transactions' times.  
+ *        - in: query
  *          name: include-refunds
  *          required: false
  *          schema:
@@ -156,6 +166,7 @@ router.get('/get-transactions/:fromAddress/:toAddress', token, throttle, (req, r
                 maxMostRecent: req.query['max-most-recent'],
                 since: req.query['since'],
                 tallyOnly: /t/.test(req.query['tally-only']),
+                tallyDollars: /t/.test(req.query['tally-dollars']),
                 includeRefunds: /t/.test(req.query['include-refunds']),
                 confirmations: req.query['confirmations-required'] ? req.query['confirmations-required'] : 0
             });
@@ -177,7 +188,7 @@ router.get('/get-transactions/:fromAddress/:toAddress', token, throttle, (req, r
  *     description: |
  *       Check if provided signature corresponds to the provided address, resolved to the provided message.
  *
- *       Check if provided address is a valid address with at least one entry on the ledger.
+ *       Check if provided address is a valid address with, optionally, at least one entry on the ledger.
  * 
  *       Only P2PKH, P2SH, Bech32 entries with a single input and one or two outputs are considered valid for the purposes
  *       of [ledger-based authorizations](https://overhide.io/2019/03/20/why.html).  
@@ -213,6 +224,14 @@ router.get('/get-transactions/:fromAddress/:toAddress', token, throttle, (req, r
  *                    1. P2PKH which begin with the number 1, eg: 1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2.
  *                    1. P2SH type starting with the number 3, eg: 3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy.
  *                    1. Bech32 type starting with bc1, eg: bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq.
+ *                check-ledger:
+ *                  type: boolean
+ *                  description: |
+ *                    Defaults to `true`.
+ * 
+ *                    Controls whether the ledger should be checked for existance of transactions from this address.
+ * 
+ *                    Setting to `false` 
  *     consumes:
  *       - application/json
  *     produces:

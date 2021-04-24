@@ -115,6 +115,7 @@ Some notable configuration points for *overhide-bitcoin*:
 | DEBUG | see 'Logging' section below | overhide-bitcoin:*,-overhide-bitcoin:is-signature-valid:txs,-overhide-bitcoin:get-transactions:txs |
 | SALT | Salt for bearer-token validation (see *Security* above) | c0c0nut |
 | TOKEN_URL | Token validation URL (see *Security* above) | https://token.overhide.io/validate |
+| INTERNAL_TOKEN | Token to use with internal services to avoid rate-limiting (just set once from https://token.overhide.io/register in all services) | ... |
 | RATE_LIMIT_WINDOW_MS | Duration of API rate limiting window (milliseconds) | 60000 |
 | RATE_LIMIT_MAX_REQUESTS_PER_WINDOW | Number of API calls per rate limiting window | 30 |
 | EXPECTED_CONFIRMATIONS | Number of confirmations before transaction is considered valid | 2 |
