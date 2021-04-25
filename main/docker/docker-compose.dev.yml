@@ -12,7 +12,6 @@ services:
     container_name: postgres
     env_file:
     - ./.npmrc.dev    
-    - ./.npmrc.dev
   redis:
     image: redis
     ports:
