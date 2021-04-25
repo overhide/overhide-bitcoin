@@ -229,8 +229,8 @@ router.get('/get-transactions/:fromAddress/:toAddress', token, cacheCheck, throt
  *       of [ledger-based authorizations](https://overhide.io/2019/03/20/why.html).  
  * 
  *       Rate limits:  
- *         - *front-end* (all calls unless providing `false` *check-ledger*): 30 calls / minute / IP (across all overhide APIs)
- *         - *back-end* (calls providing `false` *check-ledger*): 600 calls / minute / IP (across all overhide APIs)
+ *         - *front-end* (all calls unless providing `true` *skip-ledger*): 30 calls / minute / IP (across all overhide APIs)
+ *         - *back-end* (calls providing `true` *skip-ledger*): 600 calls / minute / IP (across all overhide APIs)
  *     tags:
  *       - remuneration provider
  *     requestBody:
@@ -263,16 +263,16 @@ router.get('/get-transactions/:fromAddress/:toAddress', token, cacheCheck, throt
  *                    1. Bech32 type starting with bc1, eg: bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq.
  *     parameters:
  *       - in: query
- *         name: check-ledger
+ *         name: skip-ledger
  *         required: false
  *         schema:
  *           type: boolean
  *         description: |
- *           Defaults to `true`.
+ *           Defaults to `false`.
  * 
  *           Controls whether the ledger should be checked for existance of transactions from this address.
  * 
- *           Setting to `false` skips the ledger check but allows *back-end* rate-limits on this API.
+ *           Setting to `true` skips the ledger check but allows *back-end* rate-limits on this API.
  *     consumes:
  *       - application/json
  *     produces:
@@ -290,7 +290,7 @@ router.get('/get-transactions/:fromAddress/:toAddress', token, cacheCheck, throt
  */
 router.post('/is-signature-valid', 
             token,
-            (req, res, next) => {res.locals.backend = /t/.test(req.query['check-ledger']); next()},
+            (req, res, next) => {res.locals.backend = /t/.test(req.query['skip-ledger']); next()},
             throttle, 
             (req, rsp) => {
     debug('handling is-signature-valid endpoint');
