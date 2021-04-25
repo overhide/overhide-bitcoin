@@ -37,8 +37,8 @@ router.get('/swagger.json', throttle, (req, res, next) => {
  *        All values in *satoshis*.
  * 
  *        Rate limits:  
- *          - *front-end* (all calls unless providing *as-of* and *tally-dollars* that are cached): 30 calls / minute / IP (across all overhide APIs)
- *          - *back-end* (calls providing *as-of* and *tally-dollars* IFF already cached): 600 calls / minute / IP (across all overhide APIs)
+ *          - *front-end* (all calls unless providing *as-of* and *tally-only* or *tally-dollars* that are cached): 30 calls / minute / IP (across all overhide APIs)
+ *          - *back-end* (calls providing *as-of* and *tally-only* or *tally-dollars* IFF already cached): 600 calls / minute / IP (across all overhide APIs)
  *      tags:
  *        - remuneration provider
  *      parameters:
@@ -90,8 +90,8 @@ router.get('/swagger.json', throttle, (req, res, next) => {
  *          description: |
  *            Retrieve transactions as-of this date-time (inclusive).
  * 
- *            Responses from this endpoint include an *as-of* timestamp.  Subsequent *tally-dollars* requests with this *as-of* timestamp are
- *            treated as *back-end* requests and go against *back-end* rate limits IFF the same *tally-dollars* request has recently been made 
+ *            Responses from this endpoint include an *as-of* timestamp.  Subsequent *tally-only* or *tally-dollars* requests with this *as-of* timestamp are
+ *            treated as *back-end* requests and go against *back-end* rate limits IFF the same *tally-only* or *tally-dollars* request has recently been made 
  *            (by the front-end, for example), and is cached.
  *
  *            The date-time is a string in [ISO 8601/RFC3339 format](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14).
@@ -172,7 +172,7 @@ router.get('/swagger.json', throttle, (req, res, next) => {
  *                  Timestamp of this request.
  * 
  *                  Use this timestamp as the *as-of* parameter to subsequent requests to be rate-limited at *back-end* limits (higher).  Only
- *                  works with *tally-dollars* requests.
+ *                  works with *tally-only* or *tally-dollars* requests.
  * 
  *                  The date-time is a string in [ISO 8601/RFC3339 format](https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14).
  *        400:
