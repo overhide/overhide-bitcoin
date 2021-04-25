@@ -2,7 +2,7 @@ const btc_acct1 = 'tb1q2ye03p4jdcja4vn9ap4tfq0qcc6esw3zwthcau';
 
 const btc_acct2 = 'tb1qr9d7z0es86sps5f2kefx5grpj4a5yvp4evj80z';
 
-const POINT_0_FE_BTC_IN_SATOSHIS = 1000000;
+const POINT_0_1_BTC_IN_SATOSHIS = 1000000;
 
 const HOST = process.env.HOST || process.env.npm_config_HOST || process.env.npm_package_config_HOST || 'localhost';
 const PORT = process.env.PORT || process.env.npm_config_PORT || process.env.npm_package_config_PORT || 8080;
@@ -121,11 +121,11 @@ describe('smoke tests', () => {
       .then(function(res) {
         var reso = JSON.parse(res.text);
         console.log(res.text);
-        assert.isTrue(reso.tally == (3 * POINT_0_FE_BTC_IN_SATOSHIS));
+        assert.isTrue(reso.tally == (3 * POINT_0_1_BTC_IN_SATOSHIS));
         assert.isTrue(Array.isArray(reso.transactions));
         assert.isTrue(reso.transactions.length == 3);
         for (var tx of reso.transactions) {
-          assert.isTrue(parseInt(tx["transaction-value"]) == POINT_0_FE_BTC_IN_SATOSHIS);
+          assert.isTrue(parseInt(tx["transaction-value"]) == POINT_0_1_BTC_IN_SATOSHIS);
           assert.isTrue((new Date(tx["transaction-date"])).getUTCFullYear() == '2019');
         }
         done();
@@ -141,12 +141,12 @@ describe('smoke tests', () => {
       .set({ "Authorization": `Bearer ${TOKEN}` })
       .then(function(res) {
         var reso = JSON.parse(res.text);
-        assert.isTrue(reso.tally == (2 * POINT_0_FE_BTC_IN_SATOSHIS));
+        assert.isTrue(reso.tally == (2 * POINT_0_1_BTC_IN_SATOSHIS));
         assert.isTrue(Array.isArray(reso.transactions));
         assert.isTrue(reso.transactions.length == 2);
         const txsShouldBeOlderThan = new Date('2018-11-25T00:00:00Z').getTime();
         for (var tx of reso.transactions) {
-          assert.isTrue(parseInt(tx["transaction-value"]) == POINT_0_FE_BTC_IN_SATOSHIS);
+          assert.isTrue(parseInt(tx["transaction-value"]) == POINT_0_1_BTC_IN_SATOSHIS);
           assert.isTrue((new Date(tx["transaction-date"])).getTime() > txsShouldBeOlderThan);
         }
         done();
@@ -163,12 +163,12 @@ describe('smoke tests', () => {
       .set({ "Authorization": `Bearer ${TOKEN}` })
       .then(function(res) {
         var reso = JSON.parse(res.text);
-        assert.isTrue(reso.tally == (2 * POINT_0_FE_BTC_IN_SATOSHIS));
+        assert.isTrue(reso.tally == (2 * POINT_0_1_BTC_IN_SATOSHIS));
         assert.isTrue(Array.isArray(reso.transactions));
         assert.isTrue(reso.transactions.length == 2);
         const txsShouldBeOlderThan = new Date(sinceStr).getTime();
         for (var tx of reso.transactions) {
-          assert.isTrue(parseInt(tx["transaction-value"]) == POINT_0_FE_BTC_IN_SATOSHIS);
+          assert.isTrue(parseInt(tx["transaction-value"]) == POINT_0_1_BTC_IN_SATOSHIS);
           assert.isTrue((new Date(tx["transaction-date"])).getTime() > txsShouldBeOlderThan);
         }
         done();
@@ -185,7 +185,7 @@ describe('smoke tests', () => {
       .set({ "Authorization": `Bearer ${TOKEN}` })
       .then(function(res) {
         var reso = JSON.parse(res.text);
-        assert.isTrue(reso.tally == (2 * POINT_0_FE_BTC_IN_SATOSHIS));
+        assert.isTrue(reso.tally == (2 * POINT_0_1_BTC_IN_SATOSHIS));
         assert.notExists(reso.transactions);
         done();
       })
