@@ -6,10 +6,10 @@ const btc = require('../lib/btc-chain.js');
 const log = require('../lib/log.js').fn("is-signature-valid");
 const debug = require('../lib/log.js').debug_fn("is-signature-valid");
 
-async function is_signature_valid({signature, message, address}) {
+async function is_signature_valid({signature, message, address, skipLedger}) {
   if (typeof signature !== 'string' || typeof message !== 'string' || typeof address !== 'string') throw new Error('signature, message, address must be strings');
 
-  if (!await database.checkAddressIsTracked(address)) {
+  if (!skipLedger && !await database.checkAddressIsTracked(address)) {
     const txs = await btc.getTransactionsForAddress(address);
     if (!txs || txs.length == 0) {
       throw `no transactions for address ${address} on chain.`;
