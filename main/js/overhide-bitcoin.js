@@ -50,7 +50,8 @@ const ctx_config = {
   salt: SALT,
   internalToken: INTERNAL_TOKEN,
   tokenUrl: TOKEN_URL,
-  isProd: !!ISPROD && /true/i.test(ISPROD),
+  isProd: ISPROD && /true/i.test(ISPROD),
+  isTest: !(!!ISPROD && /true/i.test(ISPROD)),
   rateLimitFeWindowsMs: RATE_LIMIT_FE_WINDOW_MS,
   rateLimitFeMax: RATE_LIMIT_FE_MAX_REQUESTS_PER_WINDOW,
   rateLimitFeRedis: RATE_LIMIT_FE_REDIS_URI,
@@ -120,9 +121,9 @@ async function onHealthCheck() {
   const dbMetrics = database.metrics();
   const normalizerMetrics = normalizer.metrics();
   const tallyCacheMetrics = tallyCache.metrics();
-  var healthy = btcMetrics.errorsDelta === 0 && dbMetrics.errorsDelta === 0 && normalizerMetrics.errorsDelta === 0 && tallyCacheMetrics.errorsDelta === 0;
+  var healthy = btcMetrics.errors === 0 && dbMetrics.errorsDelta === 0 && normalizerMetrics.errorsDelta === 0 && tallyCacheMetrics.errorsDelta === 0;
   if (!healthy) {
-    let reason = `onHealthCheck failed (btc.errorsDelta: ${btcMetrics.errorsDelta})(db.errorsDelta: ${dbMetrics.errorsDelta})(normalizer.errorsDelta: ${normalizerMetrics.errorsDelta})(tallyCache.errorsDelta: ${tallyCacheMetrics.errorsDelta})`;
+    let reason = `onHealthCheck failed (btc.errorsDelta: ${btcMetrics.errors})(db.errorsDelta: ${dbMetrics.errorsDelta})(normalizer.errorsDelta: ${normalizerMetrics.errorsDelta})(tallyCache.errorsDelta: ${tallyCacheMetrics.errorsDelta})`;
     log(reason);
     throw new HealthCheckError('healtcheck failed', [reason])
   }

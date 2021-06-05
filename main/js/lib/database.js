@@ -139,7 +139,7 @@ class Database {
               )
               ON CONFLICT (block, txhash, toaddr) DO NOTHING;
 
-            DELETE FROM btcstaging WHERE block < ${block} - 100;
+            DELETE FROM btcstaging WHERE block < ${block} - 10;
 
           COMMIT;
         `;

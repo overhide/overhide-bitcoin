@@ -1,8 +1,8 @@
-const btc_acct1 = 'tb1q2ye03p4jdcja4vn9ap4tfq0qcc6esw3zwthcau'; 
+const btc_acct1 = 'tb1q0kml68l53sj27ygau2scnd988shfqvsln8c9ja'; 
 
 const btc_acct2 = 'tb1qr9d7z0es86sps5f2kefx5grpj4a5yvp4evj80z';
 
-const POINT_0_1_BTC_IN_SATOSHIS = 1000000;
+const POINT_0_1_MBTC_IN_SATOSHIS = 1000; // .01 mBTC
 
 const HOST = process.env.HOST || process.env.npm_config_HOST || process.env.npm_package_config_HOST || 'localhost';
 const PORT = process.env.PORT || process.env.npm_config_PORT || process.env.npm_package_config_PORT || 8080;
@@ -114,19 +114,19 @@ describe('smoke tests', () => {
   /* The tests. */
   /**************/
 
-  it('validates a total of .03 btc was transferred from btc_acct1 to btc_acct2', (done) => {
+  it('validates a total of .03 mbtc was transferred from btc_acct1 to btc_acct2', (done) => {
     chai.request('http://' + HOST + ':' + PORT)
       .get('/get-transactions/'+btc_acct1+'/'+btc_acct2)
       .set({ "Authorization": `Bearer ${TOKEN}` })
       .then(function(res) {
         var reso = JSON.parse(res.text);
         console.log(res.text);
-        assert.isTrue(reso.tally == (3 * POINT_0_1_BTC_IN_SATOSHIS));
+        assert.isTrue(reso.tally == (3 * POINT_0_1_MBTC_IN_SATOSHIS));
         assert.isTrue(Array.isArray(reso.transactions));
         assert.isTrue(reso.transactions.length == 3);
         for (var tx of reso.transactions) {
-          assert.isTrue(parseInt(tx["transaction-value"]) == POINT_0_1_BTC_IN_SATOSHIS);
-          assert.isTrue((new Date(tx["transaction-date"])).getUTCFullYear() == '2019');
+          assert.isTrue(parseInt(tx["transaction-value"]) == POINT_0_1_MBTC_IN_SATOSHIS);
+          assert.isTrue((new Date(tx["transaction-date"])).getUTCFullYear() == '2021');
         }
         done();
       })
@@ -135,18 +135,18 @@ describe('smoke tests', () => {
       });
   });
 
-  it('validates .02 btc was transferred from btc_acct1 to btc_acct2 in the last 2 transactions', (done) => {
+  it('validates .02 mbtc was transferred from btc_acct1 to btc_acct2 in the last 2 transactions', (done) => {
     chai.request('http://' + HOST + ':' + PORT)
       .get('/get-transactions/'+btc_acct1+'/'+btc_acct2+'?max-most-recent=2')
       .set({ "Authorization": `Bearer ${TOKEN}` })
       .then(function(res) {
         var reso = JSON.parse(res.text);
-        assert.isTrue(reso.tally == (2 * POINT_0_1_BTC_IN_SATOSHIS));
+        assert.isTrue(reso.tally == (2 * POINT_0_1_MBTC_IN_SATOSHIS));
         assert.isTrue(Array.isArray(reso.transactions));
         assert.isTrue(reso.transactions.length == 2);
         const txsShouldBeOlderThan = new Date('2018-11-25T00:00:00Z').getTime();
         for (var tx of reso.transactions) {
-          assert.isTrue(parseInt(tx["transaction-value"]) == POINT_0_1_BTC_IN_SATOSHIS);
+          assert.isTrue(parseInt(tx["transaction-value"]) == POINT_0_1_MBTC_IN_SATOSHIS);
           assert.isTrue((new Date(tx["transaction-date"])).getTime() > txsShouldBeOlderThan);
         }
         done();
@@ -156,19 +156,20 @@ describe('smoke tests', () => {
       });
   });
 
-  it('validates .02 btc was transferred in 2 transactions from btc_acct1 to btc_acct2 since 2019-05-07T14:18:00Z', (done) => {
-    const sinceStr = '2019-05-07T14:18:00Z';
+  it('validates .02 mbtc was transferred in 2 transactions from btc_acct1 to btc_acct2 since 2021-06-05T20:00:00Z', (done) => {
+    const sinceStr = '2021-06-05T20:00:00Z';
     chai.request('http://' + HOST + ':' + PORT)
       .get('/get-transactions/'+btc_acct1+'/'+btc_acct2+'?since='+sinceStr)
       .set({ "Authorization": `Bearer ${TOKEN}` })
       .then(function(res) {
+        console.log(res.text);
         var reso = JSON.parse(res.text);
-        assert.isTrue(reso.tally == (2 * POINT_0_1_BTC_IN_SATOSHIS));
+        assert.isTrue(reso.tally == (2 * POINT_0_1_MBTC_IN_SATOSHIS));
         assert.isTrue(Array.isArray(reso.transactions));
         assert.isTrue(reso.transactions.length == 2);
         const txsShouldBeOlderThan = new Date(sinceStr).getTime();
         for (var tx of reso.transactions) {
-          assert.isTrue(parseInt(tx["transaction-value"]) == POINT_0_1_BTC_IN_SATOSHIS);
+          assert.isTrue(parseInt(tx["transaction-value"]) == POINT_0_1_MBTC_IN_SATOSHIS);
           assert.isTrue((new Date(tx["transaction-date"])).getTime() > txsShouldBeOlderThan);
         }
         done();
@@ -178,14 +179,14 @@ describe('smoke tests', () => {
       });
   });
 
-  it('validates .02 btc was transferred from btc_acct1 to btc_acct2 since 2019-05-07T14:18:00Z as tally only', (done) => {
-    const sinceStr = '2019-05-07T14:18:00Z';
+  it('validates .02 mbtc was transferred from btc_acct1 to btc_acct2 since 2021-06-05T20:00:00Z as tally only', (done) => {
+    const sinceStr = '2021-06-05T20:00:00Z';
     chai.request('http://' + HOST + ':' + PORT)
       .get('/get-transactions/'+btc_acct1+'/'+btc_acct2+'?since='+sinceStr+'&tally-only=true')
       .set({ "Authorization": `Bearer ${TOKEN}` })
       .then(function(res) {
         var reso = JSON.parse(res.text);
-        assert.isTrue(reso.tally == (2 * POINT_0_1_BTC_IN_SATOSHIS));
+        assert.isTrue(reso.tally == (2 * POINT_0_1_MBTC_IN_SATOSHIS));
         assert.notExists(reso.transactions);
         done();
       })
