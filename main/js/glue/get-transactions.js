@@ -15,11 +15,17 @@ async function get_transactions({fromAddress, toAddress, maxMostRecent = null, s
   toAddress = toAddress.toLowerCase();
 
   if (!await database.checkAddressIsTracked(fromAddress)) {
-    await database.addTransactionsForNewAddress(await btc.getTransactionsForAddress(fromAddress), fromAddress);    
+    let txsToAdd = await btc.getTransactionsForAddress(fromAddress);
+    if (txsToAdd && txsToAdd.length > 0) {
+      await database.addTransactionsForNewAddress(txsToAdd, fromAddress);    
+    }
   }
 
   if (!await database.checkAddressIsTracked(toAddress)) {
-    await database.addTransactionsForNewAddress(await btc.getTransactionsForAddress(toAddress), toAddress);        
+    let txsToAdd = await btc.getTransactionsForAddress(toAddress);
+    if (txsToAdd && txsToAdd.length > 0) {
+      await database.addTransactionsForNewAddress(txsToAdd, toAddress);        
+    }
   }
 
   var txs = await database.getTransactionsFromTo(fromAddress, toAddress);
