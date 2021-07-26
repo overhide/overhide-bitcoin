@@ -17,6 +17,7 @@ const HOST = process.env.HOST || process.env.npm_config_HOST || process.env.npm_
 const PORT = process.env.PORT || process.env.npm_config_PORT || process.env.npm_package_config_PORT || 8080;
 const BASE_URL = process.env.BASE_URL || process.env.npm_config_BASE_URL || process.env.npm_package_config_BASE_URL || 'localhost:8080';
 const DEBUG = process.env.DEBUG || process.env.npm_config_DEBUG || process.env.npm_package_config_DEBUG;
+const INSIGHTS_KEY = process.env.INSIGHTS_KEY || process.env.npm_config_INSIGHTS_KEY || process.env.npm_package_config_INSIGHTS_KEY
 const SALT = process.env.SALT || process.env.npm_config_SALT || process.env.npm_package_config_SALT;
 const TOKEN_URL = process.env.TOKEN_URL || process.env.npm_config_TOKEN_URL || process.env.npm_package_config_TOKEN_URL;
 const ISPROD = process.env.ISPROD || process.env.npm_config_ISPROD || process.env.npm_package_config_ISPROD || false;
@@ -47,6 +48,7 @@ const ctx_config = {
   host: HOST,
   port: PORT,
   debug: DEBUG,
+  insights_key: INSIGHTS_KEY,
   salt: SALT,
   internalToken: INTERNAL_TOKEN,
   tokenUrl: TOKEN_URL,
@@ -74,6 +76,7 @@ const ctx_config = {
 };
 const log = require('./lib/log.js').init(ctx_config).fn("app");
 const debug = require('./lib/log.js').init(ctx_config).debug_fn("app");
+const insights_key = require('./lib/insights.js').init(ctx_config);
 const crypto = require('./lib/crypto.js').init(ctx_config);
 const btc = require('./lib/btc-chain.js').init(ctx_config);
 const database = require('./lib/database.js').init(ctx_config);
@@ -83,6 +86,7 @@ const throttle = require('./lib/throttle.js').init(ctx_config);
 const normalizer = require('./lib/normalizer.js').init(ctx_config);
 const tallyCache = require('./lib/tally-cache.js').init(ctx_config);
 log("CONFIG:\n%O", ((cfg) => {
+  cfg.insights_key = cfg.insights_key ? cfg.insights_key.replace(/.(?=.{2})/g,'*') : null; 
   cfg.pgpassword = cfg.pgpassword.replace(/.(?=.{2})/g,'*'); 
   cfg.salt = cfg.salt.replace(/.(?=.{2})/g,'*'); 
   cfg.internalToken = cfg.internalToken.replace(/.(?=.{2})/g,'*'); 
